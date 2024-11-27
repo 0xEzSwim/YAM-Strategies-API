@@ -6,14 +6,16 @@ export class StrategyModel {
     description!: string;
     contractAbi!: any;
     underlyingAsset!: AssetModel;
-    shares!: AssetModel;
+    share!: AssetModel;
     isPaused!: boolean;
 
+    holdings?: { symbol: string; address: `0x${string}`; value: FloatModel; amount: FloatModel }[];
     tvl?: FloatModel;
     apy?: FloatModel;
-    holdings?: AssetModel[];
 
     constructor(params: StrategyModel) {
         Object.assign(this, params);
     }
 }
+
+export type StrategyFilter = { addresses?: `0x${string}`[]; symbols?: string[]; underlyingAssetAddresses?: `0x${string}`[]; isPaused?: boolean };

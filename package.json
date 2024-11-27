@@ -4,8 +4,10 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "start": "nodemon",
-    "test": "jest --config jest.config.ts --coverage",
+    "supabase:type": "npx supabase gen types typescript --project-id tlgnuselfhuijhvheyts > src/models/database.types.ts",
+    "dev": "NODE_ENV=development npm run supabase:type && nodemon",
+    "test": "NODE_ENV=test jest --config jest.config.ts --coverage",
+    "start": "node build/server.js",
     "build": "rm -rf build/ && tsc -p tsconfig.build.json"
   },
   "author": "0xEzSwim",
@@ -25,6 +27,7 @@
     "@types/node": "^22.7.3",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
+    "supabase": "^1.223.10",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",

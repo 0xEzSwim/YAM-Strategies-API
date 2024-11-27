@@ -1,7 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { server } from '../config';
-import { StrategyModel } from '../models';
+import { Database, StrategyFilter, StrategyModel } from '../models';
 import { Error, ErrorCode } from '../errors';
+
+type FullStartegyView = Database['public']['Views']['FullStrategies']['Row'];
 
 export class StrategyRepository {
     // CONSTANT
@@ -20,152 +22,100 @@ export class StrategyRepository {
         return StrategyRepository.#instance;
     }
 
-    public async getAllStrategies(): Promise<{ strategies?: StrategyModel[]; error?: Error }> {
-        const { data: strategies, error: dbError } = await this._db
-            .from('Strategies')
-            .select(
-                `
-            name,
-            description,
-            contractAbi,
-            isPaused,
-            underlyingAsset:underlyingAssetAddress(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            ),
-            shares:address(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            )
-            `
-            )
-            .returns<StrategyModel[]>();
-        if (dbError) {
-            const error = new Error(ErrorCode.DB_ERROR, 'Strategies Error', `Could not request Strategies to DB.`);
-            logging.error(error);
-            console.error(dbError);
-            return { error };
-        }
-
-        if (!strategies?.length) {
-            const error = new Error(ErrorCode.STRATEGIY_NOT_FOUND, 'Strategies Not Found', `Could not found strategies.`);
-            logging.error(error);
-            console.error(dbError);
-            return { error };
-        }
-
-        // Convert supply to BigInt
-        strategies.map((strategy) => {
-            strategy.underlyingAsset.supply = BigInt(strategy.underlyingAsset.supply);
-            strategy.shares.supply = BigInt(strategy.shares.supply);
-            return strategy;
+    private _toModel(startegyView: FullStartegyView): StrategyModel {
+        return new StrategyModel({
+            name: startegyView.name as string,
+            description: startegyView.description as string,
+            contractAbi: startegyView.contractAbi,
+            isPaused: startegyView.isPaused as boolean,
+            underlyingAsset: {
+                apiId: startegyView.underlyingAssetApiId as number,
+                address: startegyView.underlyingAssetAddress! as `0x${string}`,
+                symbol: startegyView.underlyingAssetSymbol as string,
+                supply: BigInt(startegyView.underlyingAssetSupply as string),
+                decimals: startegyView.underlyingAssetDecimals as number,
+                isStableCoin: startegyView.underlyingAssetIsStableCoin as boolean
+            },
+            share: {
+                apiId: startegyView.shareApiId as number,
+                address: startegyView.shareAddress! as `0x${string}`,
+                symbol: startegyView.shareSymbol as string,
+                supply: BigInt(startegyView.shareSupply as string),
+                decimals: startegyView.shareDecimals as number,
+                isStableCoin: startegyView.shareIsStableCoin as boolean
+            }
         });
+    }
+
+    private _buildStrategyQuery(filter?: StrategyFilter) {
+        let query = this._db.from('FullStrategies').select();
+
+        if (!!filter?.addresses?.length) {
+            query = query.in('shareAddress', filter.addresses);
+        }
+
+        if (!!filter?.symbols?.length) {
+            query = query.in('shareSymbol', filter.symbols);
+        }
+
+        if (!!filter?.underlyingAssetAddresses?.length) {
+            query = query.in('underlyingAssetAddress', filter.underlyingAssetAddresses);
+        }
+
+        if (filter?.isPaused != undefined) {
+            query = query.eq('isPaused', filter.isPaused);
+        }
+
+        return query.returns<FullStartegyView[]>();
+    }
+
+    public async getStrategies(filter?: StrategyFilter): Promise<{ strategies?: StrategyModel[]; error?: Error }> {
+        const { data: strategiesData, error: dbError } = await this._buildStrategyQuery(filter);
+        if (dbError) {
+            const error = new Error(ErrorCode.DB_ERROR, 'Strategies SELECT Error', `Could not request Strategies to DB.`);
+            logging.error(error);
+            console.error(dbError);
+            return { error };
+        }
+
+        if (!strategiesData?.length) {
+            const error = new Error(ErrorCode.STRATEGIY_NOT_FOUND, 'Strategies Not Found', `Could not find strategies.`);
+            logging.error(error);
+            console.error(dbError);
+            return { error };
+        }
+
+        const strategies: StrategyModel[] = strategiesData.map((strategyData) => {
+            return this._toModel(strategyData);
+        });
+
         return { strategies };
     }
 
-    public async getStrategy(address: `0x${string}`): Promise<{ strategy?: StrategyModel; error?: Error }> {
-        const { data: strategy, error: dbError } = await this._db
-            .from('Strategies')
-            .select(
-                `
-            name,
-            description,
-            contractAbi,
-            isPaused,
-            underlyingAsset:underlyingAssetAddress(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            ),
-            shares:address(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            )
-            `
-            )
-            .eq('address', address)
-            .returns<StrategyModel[]>()
-            .maybeSingle();
-        if (dbError) {
-            const error = new Error(ErrorCode.DB_ERROR, 'Strategies Error', `Could not request Strategies to DB.`);
-            logging.error(error);
-            console.error(dbError);
-            return { error };
-        }
-
-        if (!strategy) {
-            const error = new Error(ErrorCode.STRATEGIY_NOT_FOUND, 'Strategy Not Found', `Could not found strategy.`);
-            logging.error(error);
-            console.error(dbError);
-            return { error };
-        }
-
-        // Convert supply to BigInt
-        strategy.underlyingAsset.supply = BigInt(strategy.underlyingAsset.supply);
-        strategy.shares.supply = BigInt(strategy.shares.supply);
-        return { strategy };
-    }
-
     public async updateStrategy(_startegy: StrategyModel): Promise<{ strategy?: StrategyModel; error?: Error }> {
-        let { data: strategy, error: dbError } = await this._db
+        let { error: dbError } = await this._db
             .from('Strategies')
             .update({
                 name: _startegy.name,
                 description: _startegy.description,
+                isPaused: _startegy.isPaused,
                 updatedAt: new Date().toISOString()
             })
-            .eq('address', _startegy.shares.address)
-            .select(
-                `
-            name,
-            description,
-            contractAbi,
-            isPaused,
-            underlyingAsset:underlyingAssetAddress(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            ),
-            shares:address(
-                address,
-                apiId,
-                symbol,
-                supply::text,
-                decimals,
-                isStableCoin
-            )
-            `
-            )
-            .returns<StrategyModel[]>()
-            .maybeSingle();
-        if (!strategy || dbError) {
-            const error = new Error(ErrorCode.DB_ERROR, 'Strategy Not Found', `Strategy ${_startegy.shares.address} is not a strategy.`);
+            .eq('address', _startegy.share.address);
+
+        if (dbError) {
+            const error = new Error(ErrorCode.DB_ERROR, 'Strategy UPDATE Error', `Could not update Strategy ${_startegy.share.address} to DB.`);
             logging.error(error);
             console.error(dbError);
             return { error };
         }
 
-        // Convert supply to BigInt
-        strategy.underlyingAsset.supply = BigInt(strategy.underlyingAsset.supply);
-        strategy.shares.supply = BigInt(strategy.shares.supply);
+        const strategyResult = await this.getStrategies({ addresses: [_startegy.share.address] });
+        if (strategyResult.error) {
+            return strategyResult;
+        }
+        const strategy = strategyResult.strategies![0];
+
         return { strategy };
     }
 }

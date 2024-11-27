@@ -107,11 +107,11 @@ export class CleanSatMiningBusiness {
         withMarginOfSafty?: bigint
     ): Promise<{ fundamentalValue?: FloatModel; error?: Error }> {
         const filter: AssetFilter = { addresses: [tokenAddress], isCSMToken: true };
-        let csmTokenResult = await this._assetBu.getAsset(filter);
+        let csmTokenResult = await this._assetBu.getAssets(filter);
         if (csmTokenResult.error) {
             return csmTokenResult;
         }
-        let csmToken: AssetModel = csmTokenResult.asset!;
+        let csmToken: AssetModel = csmTokenResult.assets![0];
         let csmTokenSupply: FloatModel = { value: csmToken.supply, decimals: csmToken.decimals }; // moves the least (replace with onchain data later)
 
         let csmTokenPriceResult = await this._getCSMTokenPrice(csmToken.apiId); // moves rarely
@@ -147,7 +147,7 @@ export class CleanSatMiningBusiness {
 
     private async _calculateSellingOfferPnL(offer: Offer, withMarginOfSafty?: bigint): Promise<{ pnl?: FloatModel; error?: Error }> {
         const filter: AssetFilter = { addresses: [offer.buyerToken], isStableCoin: true };
-        let csmTokenResult = await this._assetBu.getAsset(filter);
+        let csmTokenResult = await this._assetBu.getAssets(filter);
         if (csmTokenResult.error) {
             const error = new Error(ErrorCode.OFFER_WRONG_TYPE, 'Not a sell', `Offer #${Number(offer.offerId)} is not a selling offer.`);
             logging.error(error);

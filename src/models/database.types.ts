@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       Assets: {
@@ -51,11 +26,11 @@ export type Database = {
           address: string
           apiId: number
           createdAt?: string
-          decimals: number
+          decimals?: number
           isCSMToken?: boolean | null
           isERC20?: boolean | null
           isStableCoin?: boolean | null
-          supply: number
+          supply?: number
           symbol: string
           updatedAt?: string
         }
@@ -113,17 +88,162 @@ export type Database = {
             referencedColumns: ["address"]
           },
           {
+            foreignKeyName: "Strategies_address_fkey"
+            columns: ["address"]
+            isOneToOne: true
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_address_fkey"
+            columns: ["address"]
+            isOneToOne: true
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_address_fkey"
+            columns: ["address"]
+            isOneToOne: true
+            referencedRelation: "Holdings"
+            referencedColumns: ["assetAddress"]
+          },
+          {
             foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
             columns: ["underlyingAssetAddress"]
             isOneToOne: false
             referencedRelation: "Assets"
             referencedColumns: ["address"]
           },
+          {
+            foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
+            columns: ["underlyingAssetAddress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
+            columns: ["underlyingAssetAddress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
+            columns: ["underlyingAssetAddress"]
+            isOneToOne: false
+            referencedRelation: "Holdings"
+            referencedColumns: ["assetAddress"]
+          },
+        ]
+      }
+      Strategies_Assets: {
+        Row: {
+          amount: number
+          assetAddress: string
+          createdAt: string
+          strategyAddress: string
+          updatedAt: string
+          value: number
+        }
+        Insert: {
+          amount?: number
+          assetAddress: string
+          createdAt?: string
+          strategyAddress: string
+          updatedAt?: string
+          value?: number
+        }
+        Update: {
+          amount?: number
+          assetAddress?: string
+          createdAt?: string
+          strategyAddress?: string
+          updatedAt?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
+            columns: ["assetAddress"]
+            isOneToOne: false
+            referencedRelation: "Assets"
+            referencedColumns: ["address"]
+          },
+          {
+            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
+            columns: ["assetAddress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
+            columns: ["assetAddress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
+            columns: ["assetAddress"]
+            isOneToOne: false
+            referencedRelation: "Holdings"
+            referencedColumns: ["assetAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_Assets_strategyAddress_fkey"
+            columns: ["strategyAddress"]
+            isOneToOne: false
+            referencedRelation: "Strategies"
+            referencedColumns: ["address"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      FullStrategies: {
+        Row: {
+          contractAbi: Json | null
+          description: string | null
+          isPaused: boolean | null
+          name: string | null
+          shareAddress: string | null
+          shareApiId: number | null
+          shareDecimals: number | null
+          shareIsStableCoin: boolean | null
+          shareSupply: string | null
+          shareSymbol: string | null
+          underlyingAssetAddress: string | null
+          underlyingAssetApiId: number | null
+          underlyingAssetDecimals: number | null
+          underlyingAssetIsStableCoin: boolean | null
+          underlyingAssetSupply: string | null
+          underlyingAssetSymbol: string | null
+        }
+        Relationships: []
+      }
+      Holdings: {
+        Row: {
+          assetAddress: string | null
+          assetAmount: string | null
+          assetAmountDecimals: number | null
+          assetSymbol: string | null
+          assetValue: string | null
+          assetValueDecimals: number | null
+          strategyAddress: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Strategies_Assets_strategyAddress_fkey"
+            columns: ["strategyAddress"]
+            isOneToOne: false
+            referencedRelation: "Strategies"
+            referencedColumns: ["address"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

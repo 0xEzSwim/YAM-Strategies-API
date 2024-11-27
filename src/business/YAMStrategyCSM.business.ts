@@ -9,6 +9,8 @@ export class YAMStrategyCSMBusiness {
     static #instance: YAMStrategyCSMBusiness;
     private _strategyBu: StrategyBusiness;
 
+    private _YAM_STRATEGY_CSM_ADDRESS: `0x${string}` = (process.env.YAM_STRATEGY_CSM_ADDRESS ?? '0x') as `0x${string}`;
+
     private constructor() {
         this._strategyBu = StrategyBusiness.instance;
     }
@@ -34,7 +36,7 @@ export class YAMStrategyCSMBusiness {
             address: strategy.underlyingAsset.address,
             abi: erc20Abi,
             functionName: 'allowance',
-            args: [server.MODERATOR_ACCOUNT.address, strategy.shares.address]
+            args: [server.MODERATOR_ACCOUNT.address, strategy.share.address]
         });
         logging.info('allowance: ');
         console.log(result.allowance);
@@ -54,7 +56,7 @@ export class YAMStrategyCSMBusiness {
             address: strategy.underlyingAsset.address,
             abi: erc20Abi,
             functionName: 'approve',
-            args: [strategy.shares.address, amount.value]
+            args: [strategy.share.address, amount.value]
         })
             .then(({ request }) => {
                 result.request = request;
@@ -96,7 +98,7 @@ export class YAMStrategyCSMBusiness {
         let result: { request?: any; error?: Error } = {};
         await server.PUBLIC_CLIENT.simulateContract({
             account: server.MODERATOR_ACCOUNT,
-            address: strategy.shares.address,
+            address: strategy.share.address,
             abi: strategy.contractAbi,
             functionName: 'deposit',
             args: [amount.value, receiver]
@@ -145,19 +147,19 @@ export class YAMStrategyCSMBusiness {
     //#endregion
 
     public async listenToDeposit(): Promise<{ error?: Error }> {
-        let strategyResult = await this._strategyBu.getStrategy(`0x7860fa929e453A38115699dE11739C2ad42D09c5`);
+        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
         if (strategyResult.error) {
             return strategyResult;
         }
         const strategy = strategyResult.strategy!;
 
         const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
-            address: strategy.shares.address,
+            address: strategy.share.address,
             abi: strategy.contractAbi,
             eventName: 'Deposit',
             args: {},
             onLogs: async (logs) => {
-                await this._strategyBu.updateStrategyFromBlockchain(strategy.shares.address);
+                await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
             }
         });
 
@@ -165,19 +167,19 @@ export class YAMStrategyCSMBusiness {
     }
 
     public async listenToWithdraw(): Promise<{ error?: Error }> {
-        let strategyResult = await this._strategyBu.getStrategy(`0x7860fa929e453A38115699dE11739C2ad42D09c5`);
+        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
         if (strategyResult.error) {
             return strategyResult;
         }
         const strategy = strategyResult.strategy!;
 
         const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
-            address: strategy.shares.address,
+            address: strategy.share.address,
             abi: strategy.contractAbi,
             eventName: 'Withdraw',
             args: {},
             onLogs: async (logs) => {
-                await this._strategyBu.updateStrategyFromBlockchain(strategy.shares.address);
+                await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
             }
         });
 
@@ -185,7 +187,7 @@ export class YAMStrategyCSMBusiness {
     }
 
     public async buyOfferWithStrategy(offer: Offer): Promise<{ success?: boolean; error?: Error }> {
-        let strategyResult = await this._strategyBu.getStrategy(`0x7860fa929e453A38115699dE11739C2ad42D09c5`);
+        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
         if (strategyResult.error) {
             return strategyResult;
         }
@@ -194,7 +196,7 @@ export class YAMStrategyCSMBusiness {
         let result: { request?: any; error?: Error } = {};
         await server.PUBLIC_CLIENT.simulateContract({
             account: server.MODERATOR_ACCOUNT,
-            address: strategy.shares.address,
+            address: strategy.share.address,
             abi: strategy.contractAbi,
             functionName: 'buyMaxCSMTokenFromOffer',
             args: [offer.offerId, offer.offerToken, offer.buyerToken, offer.price.value, offer.amount.value]
@@ -222,7 +224,7 @@ export class YAMStrategyCSMBusiness {
             return { error };
         }
 
-        strategyResult = await this._strategyBu.updateStrategyFromBlockchain(strategy.shares.address);
+        strategyResult = await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
         if (strategyResult.error) {
             return strategyResult;
         }

@@ -1,20 +1,24 @@
-import { AssetModel, StrategyModel } from '../models';
+import { AssetFilter, AssetModel, FloatModel, HoldingFilter, HoldingModel, StrategyFilter, StrategyModel } from '../models';
 import { Error, ErrorCode, ServerError } from '../errors';
 import { server } from '../config';
 import { AssetBusiness } from './Asset.business';
 import { StrategyRepository } from '../repository';
 import { CryptoMarketBusiness } from './CryptoMarket.business';
+import { HoldingBusiness } from './Holding.business';
+import { erc20Abi } from 'viem';
 
 export class StrategyBusiness {
     // CONSTANT
     static #instance: StrategyBusiness;
     private _strategyRepo: StrategyRepository;
     private _assetBu: AssetBusiness;
+    private _holdingBu: HoldingBusiness;
     private _cryptoBu: CryptoMarketBusiness;
 
     private constructor() {
         this._strategyRepo = StrategyRepository.instance;
         this._assetBu = AssetBusiness.instance;
+        this._holdingBu = HoldingBusiness.instance;
         this._cryptoBu = CryptoMarketBusiness.instance;
     }
 
@@ -26,6 +30,56 @@ export class StrategyBusiness {
         return StrategyBusiness.#instance;
     }
 
+    //#region GET
+    public async getAllStrategies(hasLogo: boolean = false): Promise<{ strategies?: StrategyModel[]; error?: Error }> {
+        const strategiesResult = await this._strategyRepo.getStrategies();
+        if (strategiesResult.error) {
+            return strategiesResult;
+        }
+        const strategies = strategiesResult.strategies!;
+
+        if (!hasLogo) {
+            return { strategies };
+        }
+
+        const StrategiesWithLogo: StrategyModel[] = [];
+        for (let index = 0; index < strategies.length; index++) {
+            const strategy = strategies[index];
+            let logoResult = await this._cryptoBu.getTokenLogoUrl(strategy.underlyingAsset.address);
+            strategy.underlyingAsset.logoUrl = logoResult.logoUrl;
+            StrategiesWithLogo.push(strategy);
+        }
+
+        return { strategies: StrategiesWithLogo };
+    }
+
+    public async getStrategy(address: `0x${string}`, hasLogo: boolean = false): Promise<{ strategy?: StrategyModel; error?: Error }> {
+        const strategyFilter: StrategyFilter = { addresses: [address] };
+        const strategyResult = await this._strategyRepo.getStrategies(strategyFilter);
+        if (strategyResult.error) {
+            return strategyResult;
+        }
+        const strategy = strategyResult.strategies![0];
+
+        const holdingFilter: HoldingFilter = { strategyAddresses: [address] };
+        const holdingResult = await this._holdingBu.getHoldings(holdingFilter);
+        if (holdingResult.error) {
+            holdingResult.holdings = [];
+        }
+        strategy.holdings = holdingResult.holdings!;
+
+        if (!hasLogo) {
+            return { strategy };
+        }
+
+        let logoResult = await this._cryptoBu.getTokenLogoUrl(strategy.underlyingAsset.address);
+        strategy.underlyingAsset.logoUrl = logoResult.logoUrl;
+
+        return { strategy };
+    }
+    //#endregion
+
+    //#region UPDATE
     private async _getStrategyName(address: `0x${string}`, abi: any): Promise<{ name?: string; error?: Error }> {
         let result: { name?: string; error?: Error } = {};
         result.name = (await server.PUBLIC_CLIENT.readContract({
@@ -37,13 +91,15 @@ export class StrategyBusiness {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling name().');
             logging.error(bcError);
             result.error = error;
-        })) as string;
+        })) as string | undefined;
 
         return result;
     }
 
     private async _getStrategyUnderlyingAsset(address: `0x${string}`, abi: any): Promise<{ asset?: AssetModel; error?: Error }> {
-        const assetAddress: `0x${string}` = (await server.PUBLIC_CLIENT.readContract({
+        let error: Error | undefined;
+
+        const assetAddress: `0x${string}` | undefined = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: abi,
             functionName: 'asset',
@@ -51,19 +107,25 @@ export class StrategyBusiness {
         }).catch((bcError: any) => {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling asset().');
             logging.error(bcError);
-            return { error: error };
-        })) as `0x${string}`;
+            return undefined;
+        })) as `0x${string}` | undefined;
+        if (error) {
+            return { error };
+        }
 
-        let cmcTokenResult = await this._assetBu.getAssetFromAddress(assetAddress);
+        const filter: AssetFilter = { addresses: [assetAddress!] };
+        let cmcTokenResult = await this._assetBu.getAssets(filter);
         if (cmcTokenResult.error) {
             return cmcTokenResult;
         }
 
-        return { asset: cmcTokenResult.asset };
+        return { asset: cmcTokenResult.assets![0] };
     }
 
     private async _getStrategyShares(address: `0x${string}`, abi: any): Promise<{ asset?: AssetModel; error?: Error }> {
-        const symbol: string = (await server.PUBLIC_CLIENT.readContract({
+        let error: Error | undefined;
+
+        const symbol: string | undefined = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: abi,
             functionName: 'symbol',
@@ -71,10 +133,13 @@ export class StrategyBusiness {
         }).catch((bcError: any) => {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling symbol().');
             logging.error(bcError);
-            return { error: error };
-        })) as string;
+            return undefined;
+        })) as string | undefined;
+        if (error) {
+            return { error };
+        }
 
-        const supply: bigint = (await server.PUBLIC_CLIENT.readContract({
+        const supply: bigint | undefined = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: abi,
             functionName: 'totalSupply',
@@ -82,10 +147,13 @@ export class StrategyBusiness {
         }).catch((bcError: any) => {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling totalSupply().');
             logging.error(bcError);
-            return { error: error };
-        })) as bigint;
+            return undefined;
+        })) as bigint | undefined;
+        if (error) {
+            return { error };
+        }
 
-        const decimals: bigint = (await server.PUBLIC_CLIENT.readContract({
+        const decimals: number | undefined = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: abi,
             functionName: 'decimals',
@@ -93,23 +161,27 @@ export class StrategyBusiness {
         }).catch((bcError: any) => {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling decimals().');
             logging.error(bcError);
-            return { error: error };
-        })) as bigint;
+            return undefined;
+        })) as number | undefined;
+        if (error) {
+            return { error };
+        }
 
         return {
             asset: {
                 apiId: 0,
                 address: address,
-                symbol: symbol,
-                supply: supply,
-                decimals: Number(decimals),
+                symbol: symbol!,
+                supply: supply!,
+                decimals: decimals!,
                 isStableCoin: false
             }
         };
     }
 
     private async _getStrategyPausedStatus(address: `0x${string}`, abi: any): Promise<{ isPaused?: boolean; error?: Error }> {
-        const isPaused: boolean = (await server.PUBLIC_CLIENT.readContract({
+        let result: { isPaused?: boolean; error?: Error } = {};
+        result.isPaused = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: abi,
             functionName: 'paused',
@@ -117,16 +189,58 @@ export class StrategyBusiness {
         }).catch((bcError: any) => {
             const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling paused().');
             logging.error(bcError);
-            return { error: error };
-        })) as boolean;
+            result.error = error;
+        })) as boolean | undefined;
 
-        return { isPaused: isPaused };
+        return result;
+    }
+
+    private async _getStrategyHolding(startegyAddress: `0x${string}`, assetAddress: `0x${string}`): Promise<{ amount?: FloatModel; error?: Error }> {
+        let error: Error | undefined;
+
+        const amount: bigint | undefined = await server.PUBLIC_CLIENT.readContract({
+            address: assetAddress,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [startegyAddress]
+        }).catch((bcError: any) => {
+            const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling balanceOf().');
+            logging.error(bcError);
+            return undefined;
+        });
+        if (error) {
+            return { error };
+        }
+
+        const decimals: number | undefined = await server.PUBLIC_CLIENT.readContract({
+            address: assetAddress,
+            abi: erc20Abi,
+            functionName: 'decimals',
+            args: []
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling decimals().');
+            logging.error(bcError);
+            return undefined;
+        });
+        if (error) {
+            return { error };
+        }
+
+        return { amount: { value: amount!, decimals: decimals! } };
     }
 
     private async _updateStrategy(startegy: StrategyModel): Promise<{ strategy?: StrategyModel; error?: Error }> {
         // Update Assets in DB
         await this._assetBu.updateAsset(startegy.underlyingAsset);
-        await this._assetBu.updateAsset(startegy.shares);
+        await this._assetBu.updateAsset(startegy.share);
+
+        // Upsert Holdings in DB
+        if (!!startegy.holdings?.length) {
+            for (let index = 0; index < startegy.holdings.length; index++) {
+                const holding = startegy.holdings[index];
+                await this._holdingBu.upsertHolding(startegy.share.address, holding);
+            }
+        }
 
         // Update Strategy in DB
         return this._strategyRepo.updateStrategy(startegy);
@@ -155,7 +269,7 @@ export class StrategyBusiness {
         if (sharesResult.error) {
             return sharesResult;
         }
-        strategy.shares = sharesResult.asset!;
+        strategy.share = sharesResult.asset!;
 
         const isPausedResult = await this._getStrategyPausedStatus(address, strategy.contractAbi);
         if (isPausedResult.error) {
@@ -163,45 +277,37 @@ export class StrategyBusiness {
         }
         strategy.isPaused = isPausedResult.isPaused!;
 
+        const filter: AssetFilter = { isERC20: true };
+        const assetsResult = await this._assetBu.getAssets(filter);
+        if (assetsResult.error) {
+            return assetsResult;
+        }
+        let assets: AssetModel[] = assetsResult.assets!;
+        console.log(assets);
+
+        let newHoldings: HoldingModel[] = [];
+        for (let index = 0; index < assets.length; index++) {
+            const asset = assets[index];
+            const holdingResult = await this._getStrategyHolding(address, asset.address);
+            if (holdingResult.error) {
+                console.error(holdingResult.error);
+                continue;
+            }
+
+            if (holdingResult.amount!.value <= 0n) {
+                continue;
+            }
+
+            newHoldings.push({
+                address: asset.address,
+                symbol: asset.symbol,
+                value: { value: 1000000n, decimals: strategy.underlyingAsset.decimals },
+                amount: { value: holdingResult.amount!.value, decimals: holdingResult.amount!.decimals }
+            });
+        }
+        strategy.holdings = newHoldings;
+
         return this._updateStrategy(strategy);
     }
-
-    public async getStrategy(address: `0x${string}`, hasLogo: boolean = false): Promise<{ strategy?: StrategyModel; error?: Error }> {
-        const strategyResult = await this._strategyRepo.getStrategy(address);
-        if (strategyResult.error) {
-            return strategyResult;
-        }
-        const strategy = strategyResult.strategy!;
-
-        if (!hasLogo) {
-            return { strategy };
-        }
-
-        let logoResult = await this._cryptoBu.getTokenLogoUrl(strategy.underlyingAsset.address);
-        strategy.underlyingAsset.logoUrl = logoResult.logoUrl;
-
-        return { strategy };
-    }
-
-    public async getAllStrategies(hasLogo: boolean = false): Promise<{ strategies?: StrategyModel[]; error?: Error }> {
-        const strategiesResult = await this._strategyRepo.getAllStrategies();
-        if (strategiesResult.error) {
-            return strategiesResult;
-        }
-        const strategies = strategiesResult.strategies!;
-
-        if (!hasLogo) {
-            return { strategies };
-        }
-
-        const StrategiesWithLogo: StrategyModel[] = [];
-        for (let index = 0; index < strategies.length; index++) {
-            const strategy = strategies[index];
-            let logoResult = await this._cryptoBu.getTokenLogoUrl(strategy.underlyingAsset.address);
-            strategy.underlyingAsset.logoUrl = logoResult.logoUrl;
-            StrategiesWithLogo.push(strategy);
-        }
-
-        return { strategies: StrategiesWithLogo };
-    }
+    //#endregion
 }

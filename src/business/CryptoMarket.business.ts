@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { server } from '../config';
-import { AssetModel, FloatModel } from '../models';
+import { AssetFilter, AssetModel, FloatModel } from '../models';
 import { Error, ErrorCode, ServerError } from '../errors';
 import { convertNumberToBigInt } from '../library';
 import { AssetBusiness } from './Asset.business';
@@ -88,67 +88,67 @@ export class CryptoMarketBusiness {
     //#endregion
 
     public async getTokenLogoUrl(address: `0x${string}`): Promise<{ logoUrl?: string; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromAddress(address);
+        const filter: AssetFilter = { addresses: [address] };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
-        const asset = assetResult.asset!;
+        const asset = assetResult.assets![0];
 
         return await this._getTokenLogoUrl(asset.apiId);
     }
 
     public async getTokenLastPrice(address: `0x${string}`): Promise<{ price?: FloatModel; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromAddress(address);
+        const filter: AssetFilter = { addresses: [address] };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
-        const asset = assetResult.asset!;
+        const asset = assetResult.assets![0];
 
         return await this._getLatestPrice(asset.apiId);
     }
 
     public async getBTCLastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromSymbol('BTC');
+        const filter: AssetFilter = { symbols: ['BTC'] };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.asset!.apiId;
+        const cmcAssetId = assetResult.assets![0].apiId;
         return await this._getLatestPrice(cmcAssetId);
     }
 
     public async getUSDCLastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromSymbol('USDC.M');
+        const filter: AssetFilter = { symbols: ['USDC.M'] };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.asset!.apiId;
+        const cmcAssetId = assetResult.assets![0].apiId;
         return await this._getLatestPrice(cmcAssetId);
     }
 
     public async getWXDAILastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromSymbol('WXDAI');
+        const filter: AssetFilter = { symbols: ['WXDAI'] };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.asset!.apiId;
+        const cmcAssetId = assetResult.assets![0].apiId;
         return await this._getLatestPrice(cmcAssetId);
     }
 
     public async getStablecoinLastPrice(address: `0x${string}`): Promise<{ price?: FloatModel; error?: Error }> {
-        const assetResult = await this._assetBu.getAssetFromAddress(address);
+        const filter: AssetFilter = { addresses: [address], isStableCoin: true };
+        const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
             return assetResult;
         }
-        const asset = assetResult.asset!;
-
-        if (!asset.isStableCoin) {
-            const error = new Error(ErrorCode.TOKEN_NOT_STABLECOIN, 'Not a Stablecoin', `Token ${address} is not a stablecoin.`);
-            logging.error(error);
-            return { error };
-        }
+        const asset = assetResult.assets![0];
 
         return await this._getLatestPrice(asset.apiId);
     }

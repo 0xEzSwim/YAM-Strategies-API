@@ -10,4 +10,5 @@ export type AssetModel = {
 
     logoUrl?: string;
 };
+
 export type AssetFilter = { addresses?: `0x${string}`[]; symbols?: string[]; isERC20?: boolean; isStableCoin?: boolean; isCSMToken?: boolean };

@@ -48,11 +48,11 @@ export class MainController {
                 decimals: strategy.underlyingAsset.decimals,
                 logoUrl: strategy.underlyingAsset.logoUrl
             },
-            shares: {
-                symbol: strategy.shares.symbol,
-                address: strategy.shares.address,
-                supply: Number(strategy.shares.supply) / 10 ** strategy.shares.decimals,
-                decimals: strategy.shares.decimals
+            share: {
+                symbol: strategy.share.symbol,
+                address: strategy.share.address,
+                supply: Number(strategy.share.supply) / 10 ** strategy.share.decimals,
+                decimals: strategy.share.decimals
             },
             isPaused: strategy.isPaused
         }));
@@ -83,13 +83,21 @@ export class MainController {
                     decimals: strategy.underlyingAsset.decimals,
                     logoUrl: strategy.underlyingAsset.logoUrl
                 },
-                shares: {
-                    symbol: strategy.shares.symbol,
-                    address: strategy.shares.address,
-                    supply: Number(strategy.shares.supply) / 10 ** strategy.shares.decimals,
-                    decimals: strategy.shares.decimals
+                share: {
+                    symbol: strategy.share.symbol,
+                    address: strategy.share.address,
+                    supply: Number(strategy.share.supply) / 10 ** strategy.share.decimals,
+                    decimals: strategy.share.decimals
                 },
-                isPaused: strategy.isPaused
+                isPaused: strategy.isPaused,
+                holdings: strategy.holdings?.map((holding) => {
+                    return {
+                        address: holding.address,
+                        symbol: holding.symbol,
+                        value: Number(holding.value.value) / 10 ** holding.value.decimals,
+                        amount: Number(holding.amount.value) / 10 ** holding.amount.decimals
+                    };
+                })
             }
         });
     }
@@ -117,10 +125,10 @@ export class MainController {
                     decimals: strategy.underlyingAsset.decimals
                 },
                 shares: {
-                    symbol: strategy.shares.symbol,
-                    address: strategy.shares.address,
-                    supply: Number(strategy.shares.supply) / 10 ** strategy.shares.decimals,
-                    decimals: strategy.shares.decimals
+                    symbol: strategy.share.symbol,
+                    address: strategy.share.address,
+                    supply: Number(strategy.share.supply) / 10 ** strategy.share.decimals,
+                    decimals: strategy.share.decimals
                 },
                 isPaused: strategy.isPaused
             }

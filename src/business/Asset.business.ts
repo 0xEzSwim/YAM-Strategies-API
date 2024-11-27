@@ -19,12 +19,8 @@ export class AssetBusiness {
         return AssetBusiness.#instance;
     }
 
-    public getAssets(filter: AssetFilter): Promise<{ assets?: AssetModel[]; error?: Error }> {
+    public getAssets(filter?: AssetFilter): Promise<{ assets?: AssetModel[]; error?: Error }> {
         return this._assetRepo.getAssets(filter);
-    }
-
-    public getAsset(filter: AssetFilter): Promise<{ asset?: AssetModel; error?: Error }> {
-        return this._assetRepo.getAsset(filter);
     }
 
     public getAllERC20(): Promise<{ assets?: AssetModel[]; error?: Error }> {
@@ -40,16 +36,6 @@ export class AssetBusiness {
     public getCSMTokens(): Promise<{ assets?: AssetModel[]; error?: Error }> {
         const filter: AssetFilter = { isCSMToken: true };
         return this.getAssets(filter);
-    }
-
-    public getAssetFromAddress(address: `0x${string}`): Promise<{ asset?: AssetModel; error?: Error }> {
-        const filter: AssetFilter = { addresses: [address] };
-        return this.getAsset(filter);
-    }
-
-    public getAssetFromSymbol(symbol: string): Promise<{ asset?: AssetModel; error?: Error }> {
-        const filter: AssetFilter = { symbols: [symbol] };
-        return this.getAsset(filter);
     }
 
     public updateAsset(asset: AssetModel): Promise<{ asset?: AssetModel; error?: Error }> {
