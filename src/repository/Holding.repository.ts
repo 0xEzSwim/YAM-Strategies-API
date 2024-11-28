@@ -97,4 +97,17 @@ export class HoldingRepository {
 
         return { holding };
     }
+
+    public async deleteHoldings(_startegyAddress: `0x${string}`): Promise<{ error?: Error }> {
+        let { error: dbError } = await this._db.from('Strategies_Assets').delete().eq('strategyAddress', _startegyAddress);
+
+        if (dbError) {
+            const error = new Error(ErrorCode.DB_ERROR, 'Holding UPDATE Error', `Could not delete Holding to DB.`);
+            logging.error(error);
+            console.error(dbError);
+            return { error };
+        }
+
+        return {};
+    }
 }

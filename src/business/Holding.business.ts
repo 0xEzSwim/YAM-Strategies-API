@@ -31,4 +31,8 @@ export class HoldingBusiness {
     public upsertHolding(strategyAddress: `0x${string}`, holding: HoldingModel): Promise<{ holding?: HoldingModel; error?: Error }> {
         return this._holdingRepo.upsertHolding(strategyAddress, holding);
     }
+
+    public deleteHoldings(strategyAddress: `0x${string}`): Promise<{ error?: Error }> {
+        return this._holdingRepo.deleteHoldings(strategyAddress);
+    }
 }

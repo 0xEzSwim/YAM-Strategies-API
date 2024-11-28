@@ -235,7 +235,9 @@ export class StrategyBusiness {
         await this._assetBu.updateAsset(startegy.share);
 
         // Upsert Holdings in DB
-        if (!!startegy.holdings?.length) {
+        if (!startegy.holdings?.length) {
+            await this._holdingBu.deleteHoldings(startegy.share.address);
+        } else {
             for (let index = 0; index < startegy.holdings.length; index++) {
                 const holding = startegy.holdings[index];
                 await this._holdingBu.upsertHolding(startegy.share.address, holding);
@@ -283,7 +285,6 @@ export class StrategyBusiness {
             return assetsResult;
         }
         let assets: AssetModel[] = assetsResult.assets!;
-        console.log(assets);
 
         let newHoldings: HoldingModel[] = [];
         for (let index = 0; index < assets.length; index++) {

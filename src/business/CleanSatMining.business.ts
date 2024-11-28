@@ -287,7 +287,8 @@ export class CleanSatMiningBusiness {
         let countOffer: bigint = (await server.PUBLIC_CLIENT.readContract({
             address: this._CLEANSAT_MINING_ADDRESS,
             abi: cleanSatMiningContract.abi,
-            functionName: 'getOfferCount'
+            functionName: 'getOfferCount',
+            args: []
         })) as bigint;
 
         const resultPromises: Promise<{ offer?: Offer; error?: Error }>[] = [];
@@ -352,7 +353,7 @@ export class CleanSatMiningBusiness {
         };
     }
 
-    public async listenToNewSellingOffers(): Promise<{ error?: Error }> {
+    public async listenToSellingOffers(): Promise<{ error?: Error }> {
         const csmTokensResult = await this._assetBu.getCSMTokens();
         if (csmTokensResult.error) {
             return csmTokensResult;
@@ -372,89 +373,7 @@ export class CleanSatMiningBusiness {
         const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
             address: this._CLEANSAT_MINING_ADDRESS,
             abi: cleanSatMiningContract.abi,
-            eventName: 'OfferCreated',
-            args: {
-                offerToken: csmTokenAddresses,
-                buyerToken: stableCoinAddresses,
-                buyer: ['0x0000000000000000000000000000000000000000']
-            },
-            onLogs: async (logs) => {
-                let offers: Offer[] = (logs as unknown as any[]).map(
-                    (log: {
-                        eventName: string;
-                        args: {
-                            offerToken: `0x${string}`;
-                            buyerToken: `0x${string}`;
-                            seller: `0x${string}`;
-                            buyer: `0x${string}`;
-                            offerId: bigint;
-                            price: bigint;
-                            amount: bigint;
-                        };
-                    }): Offer => {
-                        return {
-                            offerId: log.args.offerId,
-                            seller: log.args.seller,
-                            buyer: log.args.buyer,
-                            offerToken: log.args.offerToken,
-                            offerTokenSymbol: tokenPool.find((token) => token.address === log.args.offerToken)!.symbol,
-                            buyerToken: log.args.buyerToken,
-                            buyerTokenSymbol: tokenPool.find((token) => token.address === log.args.buyerToken)!.symbol,
-                            price: {
-                                value: log.args.price,
-                                decimals: tokenPool.find((token) => token.address === log.args.buyerToken)!.decimals
-                            },
-                            amount: {
-                                value: log.args.amount,
-                                decimals: tokenPool.find((token) => token.address === log.args.offerToken)!.decimals
-                            }
-                        };
-                    }
-                );
-
-                for (let index = 0; index < offers.length; index++) {
-                    const offer = offers[index];
-                    // Add to local offers
-                    this.offers.push(offer);
-                    // Calculate PnL to buy
-                    const pnlResult = await this._calculateSellingOfferPnL(offer, 30n);
-                    if (!pnlResult.error) {
-                        if (pnlResult.pnl!.value > 0) {
-                            const buyResult = await this._yamStrategyCSMBu.buyOfferWithStrategy(offer);
-                            if (buyResult.success) {
-                                logging.info(`Offer #${offer.offerId} bought!`);
-                                await this.updateOffer(offer.offerId);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        return {};
-    }
-
-    public async listenToUpdatedSellingOffers(): Promise<{ error?: Error }> {
-        const csmTokensResult = await this._assetBu.getCSMTokens();
-        if (csmTokensResult.error) {
-            return csmTokensResult;
-        }
-        const csmTokens = csmTokensResult.assets!;
-
-        let stableCoinsResult = await this._assetBu.getStableCoins();
-        if (stableCoinsResult.error) {
-            return stableCoinsResult;
-        }
-        const stableCoins = stableCoinsResult.assets!;
-
-        const tokenPool: AssetModel[] = [...csmTokens, ...stableCoins];
-        const csmTokenAddresses: `0x${string}`[] = csmTokens.map((csmToken) => csmToken.address);
-        const stableCoinAddresses: `0x${string}`[] = stableCoins.map((stableCoin) => stableCoin.address);
-
-        const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
-            address: this._CLEANSAT_MINING_ADDRESS,
-            abi: cleanSatMiningContract.abi,
-            eventName: 'OfferUpdated',
+            eventName: ['OfferCreated', 'OfferUpdated'],
             args: {
                 offerToken: csmTokenAddresses,
                 buyerToken: stableCoinAddresses,

@@ -146,46 +146,6 @@ export class YAMStrategyCSMBusiness {
     }
     //#endregion
 
-    public async listenToDeposit(): Promise<{ error?: Error }> {
-        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
-        if (strategyResult.error) {
-            return strategyResult;
-        }
-        const strategy = strategyResult.strategy!;
-
-        const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
-            address: strategy.share.address,
-            abi: strategy.contractAbi,
-            eventName: 'Deposit',
-            args: {},
-            onLogs: async (logs) => {
-                await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
-            }
-        });
-
-        return {};
-    }
-
-    public async listenToWithdraw(): Promise<{ error?: Error }> {
-        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
-        if (strategyResult.error) {
-            return strategyResult;
-        }
-        const strategy = strategyResult.strategy!;
-
-        const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
-            address: strategy.share.address,
-            abi: strategy.contractAbi,
-            eventName: 'Withdraw',
-            args: {},
-            onLogs: async (logs) => {
-                await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
-            }
-        });
-
-        return {};
-    }
-
     public async buyOfferWithStrategy(offer: Offer): Promise<{ success?: boolean; error?: Error }> {
         let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
         if (strategyResult.error) {
@@ -231,4 +191,25 @@ export class YAMStrategyCSMBusiness {
 
         return { success: true };
     }
+
+    //#region LISTENERS
+    public async listenToYAMStrategyCSMStorage(): Promise<{ error?: Error }> {
+        let strategyResult = await this._strategyBu.getStrategy(this._YAM_STRATEGY_CSM_ADDRESS);
+        if (strategyResult.error) {
+            return strategyResult;
+        }
+        const strategy = strategyResult.strategy!;
+
+        const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
+            address: strategy.share.address,
+            abi: strategy.contractAbi,
+            eventName: ['Paused', 'Unpaused', 'Deposit', 'Withdraw'],
+            onLogs: async (logs) => {
+                await this._strategyBu.updateStrategyFromBlockchain(strategy.share.address);
+            }
+        });
+
+        return {};
+    }
+    //#endregion
 }

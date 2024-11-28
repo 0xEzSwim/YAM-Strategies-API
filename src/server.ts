@@ -39,12 +39,10 @@ export const Main = async () => {
 
     logging.log('Starting Server');
     logging.log('----------------------------------------');
-    await YAMStrategyCSMBusiness.instance.listenToDeposit();
-    await YAMStrategyCSMBusiness.instance.listenToWithdraw();
+    await YAMStrategyCSMBusiness.instance.listenToYAMStrategyCSMStorage();
     await CleanSatMiningBusiness.instance.getAllOffers();
     logging.log(`${CleanSatMiningBusiness.instance.offers?.length} CSM offers fetched`);
-    await CleanSatMiningBusiness.instance.listenToNewSellingOffers();
-    await CleanSatMiningBusiness.instance.listenToUpdatedSellingOffers();
+    await CleanSatMiningBusiness.instance.listenToSellingOffers();
     logging.log(`Listening to new and updated selling offers on CleanSat Mining`);
     httpsServer = https.createServer(options, router);
     httpsServer.listen(server.HTTPS_SERVER_PORT, () => {
