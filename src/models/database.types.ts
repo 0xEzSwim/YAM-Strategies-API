@@ -92,14 +92,14 @@ export type Database = {
             columns: ["address"]
             isOneToOne: true
             referencedRelation: "FullStrategies"
-            referencedColumns: ["underlyingAssetAddress"]
+            referencedColumns: ["shareAddress"]
           },
           {
             foreignKeyName: "Strategies_address_fkey"
             columns: ["address"]
             isOneToOne: true
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
+            referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_address_fkey"
@@ -120,14 +120,14 @@ export type Database = {
             columns: ["underlyingAssetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["underlyingAssetAddress"]
+            referencedColumns: ["shareAddress"]
           },
           {
             foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
             columns: ["underlyingAssetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
+            referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
@@ -176,14 +176,14 @@ export type Database = {
             columns: ["assetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["underlyingAssetAddress"]
+            referencedColumns: ["shareAddress"]
           },
           {
             foreignKeyName: "Strategies_Assets_assetAddress_fkey"
             columns: ["assetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
+            referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_Assets_assetAddress_fkey"
@@ -215,6 +215,7 @@ export type Database = {
           shareIsStableCoin: boolean | null
           shareSupply: string | null
           shareSymbol: string | null
+          tvl: string | null
           underlyingAssetAddress: string | null
           underlyingAssetApiId: number | null
           underlyingAssetDecimals: number | null

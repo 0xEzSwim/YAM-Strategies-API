@@ -43,7 +43,10 @@ export class StrategyRepository {
                 supply: BigInt(startegyView.shareSupply as string),
                 decimals: startegyView.shareDecimals as number,
                 isStableCoin: startegyView.shareIsStableCoin as boolean
-            }
+            },
+            tvl: startegyView.tvl
+                ? { value: BigInt(startegyView.tvl as string), decimals: startegyView.underlyingAssetDecimals as number }
+                : undefined
         });
     }
 

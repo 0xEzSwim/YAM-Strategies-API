@@ -114,12 +114,58 @@ export class StrategyBusiness {
         }
 
         const filter: AssetFilter = { addresses: [assetAddress!] };
-        let cmcTokenResult = await this._assetBu.getAssets(filter);
-        if (cmcTokenResult.error) {
-            return cmcTokenResult;
+        let underlyingAssetResult = await this._assetBu.getAssets(filter);
+        if (underlyingAssetResult.error) {
+            return underlyingAssetResult;
         }
+        const underlyingAsset = underlyingAssetResult.assets![0];
 
-        return { asset: cmcTokenResult.assets![0] };
+        const symbol: string | undefined = (await server.PUBLIC_CLIENT.readContract({
+            address: underlyingAsset.address,
+            abi: erc20Abi,
+            functionName: 'symbol',
+            args: []
+        }).catch((bcError: any) => {
+            const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling symbol().');
+            logging.error(bcError);
+            return undefined;
+        })) as string | undefined;
+        if (error) {
+            return { error };
+        }
+        underlyingAsset.symbol = symbol!;
+
+        const supply: bigint | undefined = (await server.PUBLIC_CLIENT.readContract({
+            address: underlyingAsset.address,
+            abi: erc20Abi,
+            functionName: 'totalSupply',
+            args: []
+        }).catch((bcError: any) => {
+            const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling totalSupply().');
+            logging.error(bcError);
+            return undefined;
+        })) as bigint | undefined;
+        if (error) {
+            return { error };
+        }
+        underlyingAsset.supply = supply!;
+
+        const decimals: number | undefined = await server.PUBLIC_CLIENT.readContract({
+            address: underlyingAsset.address,
+            abi: erc20Abi,
+            functionName: 'decimals',
+            args: []
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling decimals().');
+            logging.error(bcError);
+            return undefined;
+        });
+        if (error) {
+            return { error };
+        }
+        underlyingAsset.decimals = decimals!;
+
+        return { asset: underlyingAsset };
     }
 
     private async _getStrategyShares(address: `0x${string}`, abi: any): Promise<{ asset?: AssetModel; error?: Error }> {
@@ -195,7 +241,11 @@ export class StrategyBusiness {
         return result;
     }
 
-    private async _getStrategyHolding(startegyAddress: `0x${string}`, assetAddress: `0x${string}`): Promise<{ amount?: FloatModel; error?: Error }> {
+    private async _getStrategyHolding(
+        startegyAddress: `0x${string}`,
+        assetAddress: `0x${string}`,
+        abi: any
+    ): Promise<{ holding?: { averageBuyingPrice: bigint; amount: FloatModel }; error?: Error }> {
         let error: Error | undefined;
 
         const amount: bigint | undefined = await server.PUBLIC_CLIENT.readContract({
@@ -226,7 +276,29 @@ export class StrategyBusiness {
             return { error };
         }
 
-        return { amount: { value: amount!, decimals: decimals! } };
+        const avgBuyingPrice = (await server.PUBLIC_CLIENT.readContract({
+            address: startegyAddress,
+            abi: abi,
+            functionName: 'averageBuyingPrice',
+            args: [assetAddress]
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling averageBuyingPrice().');
+            logging.error(bcError);
+            return undefined;
+        })) as bigint | undefined;
+        if (error) {
+            return { error };
+        }
+
+        return {
+            holding: {
+                averageBuyingPrice: avgBuyingPrice!,
+                amount: {
+                    value: amount!,
+                    decimals: decimals!
+                }
+            }
+        };
     }
 
     private async _updateStrategy(startegy: StrategyModel): Promise<{ strategy?: StrategyModel; error?: Error }> {
@@ -279,31 +351,80 @@ export class StrategyBusiness {
         }
         strategy.isPaused = isPausedResult.isPaused!;
 
-        const filter: AssetFilter = { isERC20: true };
-        const assetsResult = await this._assetBu.getAssets(filter);
-        if (assetsResult.error) {
-            return assetsResult;
-        }
-        let assets: AssetModel[] = assetsResult.assets!;
-
         let newHoldings: HoldingModel[] = [];
-        for (let index = 0; index < assets.length; index++) {
-            const asset = assets[index];
-            const holdingResult = await this._getStrategyHolding(address, asset.address);
+        let error: Error | undefined;
+        const underlyingAssetAmount: bigint | undefined = await server.PUBLIC_CLIENT.readContract({
+            address: strategy.underlyingAsset.address,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [address]
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling balanceOf().');
+            logging.error(bcError);
+            return undefined;
+        });
+        if (error) {
+            return { error };
+        }
+
+        newHoldings.push({
+            address: strategy.underlyingAsset.address,
+            symbol: strategy.underlyingAsset.symbol,
+            value: {
+                value: BigInt(10 ** strategy.underlyingAsset.decimals),
+                decimals: strategy.underlyingAsset.decimals
+            },
+            amount: { value: underlyingAssetAmount!, decimals: strategy.underlyingAsset.decimals }
+        });
+
+        const holdingsCount = (await server.PUBLIC_CLIENT.readContract({
+            address: address,
+            abi: strategy.contractAbi,
+            functionName: 'getHoldingsCount',
+            args: []
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling getHoldingsCount().');
+            logging.error(bcError);
+            return undefined;
+        })) as bigint | undefined;
+        if (error) {
+            return { error };
+        }
+
+        const holdingsLUT = (await server.PUBLIC_CLIENT.readContract({
+            address: address,
+            abi: strategy.contractAbi,
+            functionName: 'getHoldingsAddress',
+            args: []
+        }).catch((bcError: any) => {
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling getHoldingsAddress().');
+            logging.error(bcError);
+            return undefined;
+        })) as `0x${string}`[] | undefined;
+        if (error) {
+            return { error };
+        }
+
+        for (let index = 0; index < holdingsCount!; index++) {
+            const assetAddress = holdingsLUT![index];
+            const holdingResult = await this._getStrategyHolding(address, assetAddress, strategy.contractAbi);
             if (holdingResult.error) {
                 console.error(holdingResult.error);
                 continue;
             }
 
-            if (holdingResult.amount!.value <= 0n) {
+            if (holdingResult.holding!.averageBuyingPrice <= 0n) {
                 continue;
             }
 
             newHoldings.push({
-                address: asset.address,
-                symbol: asset.symbol,
-                value: { value: 1000000n, decimals: strategy.underlyingAsset.decimals },
-                amount: { value: holdingResult.amount!.value, decimals: holdingResult.amount!.decimals }
+                address: assetAddress,
+                symbol: '',
+                value: {
+                    value: holdingResult.holding!.averageBuyingPrice,
+                    decimals: strategy.underlyingAsset.decimals
+                },
+                amount: { value: holdingResult.holding!.amount.value, decimals: holdingResult.holding!.amount.decimals }
             });
         }
         strategy.holdings = newHoldings;

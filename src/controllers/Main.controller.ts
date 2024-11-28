@@ -54,7 +54,8 @@ export class MainController {
                 supply: Number(strategy.share.supply) / 10 ** strategy.share.decimals,
                 decimals: strategy.share.decimals
             },
-            isPaused: strategy.isPaused
+            isPaused: strategy.isPaused,
+            tvl: strategy.tvl ? Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals : undefined
         }));
 
         return res.status(200).json({ data: strategies });
@@ -97,7 +98,8 @@ export class MainController {
                         value: Number(holding.value.value) / 10 ** holding.value.decimals,
                         amount: Number(holding.amount.value) / 10 ** holding.amount.decimals
                     };
-                })
+                }),
+                tvl: strategy.tvl ? Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals : undefined
             }
         });
     }
