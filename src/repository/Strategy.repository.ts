@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { server } from '../config';
 import { Database, StrategyFilter, StrategyModel } from '../models';
 import { Error, ErrorCode } from '../errors';
+import { toJson } from '../library';
 
 type FullStartegyView = Database['public']['Views']['FullStrategies']['Row'];
 
@@ -44,9 +45,7 @@ export class StrategyRepository {
                 decimals: startegyView.shareDecimals as number,
                 isStableCoin: startegyView.shareIsStableCoin as boolean
             },
-            tvl: startegyView.tvl
-                ? { value: BigInt(startegyView.tvl as string), decimals: startegyView.underlyingAssetDecimals as number }
-                : undefined
+            tvl: { value: BigInt(startegyView.tvl as string), decimals: startegyView.underlyingAssetDecimals as number }
         });
     }
 
@@ -102,6 +101,7 @@ export class StrategyRepository {
                 name: _startegy.name,
                 description: _startegy.description,
                 isPaused: _startegy.isPaused,
+                tvl: toJson(_startegy.tvl.value),
                 updatedAt: new Date().toISOString()
             })
             .eq('address', _startegy.share.address);

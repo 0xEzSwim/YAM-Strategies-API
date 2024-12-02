@@ -55,7 +55,7 @@ export class MainController {
                 decimals: strategy.share.decimals
             },
             isPaused: strategy.isPaused,
-            tvl: strategy.tvl ? Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals : undefined
+            tvl: Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals
         }));
 
         return res.status(200).json({ data: strategies });
@@ -96,10 +96,11 @@ export class MainController {
                         address: holding.address,
                         symbol: holding.symbol,
                         value: Number(holding.value.value) / 10 ** holding.value.decimals,
-                        amount: Number(holding.amount.value) / 10 ** holding.amount.decimals
+                        amount: Number(holding.amount.value) / 10 ** holding.amount.decimals,
+                        allocation: Number(holding.allocation.value) / 10 ** holding.allocation.decimals
                     };
                 }),
-                tvl: strategy.tvl ? Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals : undefined
+                tvl: Number(strategy.tvl.value) / 10 ** strategy.tvl.decimals
             }
         });
     }

@@ -28,7 +28,8 @@ export class HoldingRepository {
             address: holdingView.assetAddress as `0x${string}`,
             symbol: holdingView.assetSymbol as string,
             value: { value: BigInt(holdingView.assetValue as string), decimals: holdingView.assetValueDecimals as number },
-            amount: { value: BigInt(holdingView.assetAmount as string), decimals: holdingView.assetAmountDecimals as number }
+            amount: { value: BigInt(holdingView.assetAmount as string), decimals: holdingView.assetAmountDecimals as number },
+            allocation: { value: BigInt(holdingView.strategyAllocation as string), decimals: holdingView.assetValueDecimals as number }
         };
     }
 

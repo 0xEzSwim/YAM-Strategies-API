@@ -56,6 +56,7 @@ export type Database = {
           description: string
           isPaused: boolean
           name: string
+          tvl: number
           underlyingAssetAddress: string
           updatedAt: string
         }
@@ -66,6 +67,7 @@ export type Database = {
           description: string
           isPaused: boolean
           name: string
+          tvl?: number
           underlyingAssetAddress: string
           updatedAt?: string
         }
@@ -76,6 +78,7 @@ export type Database = {
           description?: string
           isPaused?: boolean
           name?: string
+          tvl?: number
           underlyingAssetAddress?: string
           updatedAt?: string
         }
@@ -234,6 +237,7 @@ export type Database = {
           assetValue: string | null
           assetValueDecimals: number | null
           strategyAddress: string | null
+          strategyAllocation: string | null
         }
         Relationships: [
           {

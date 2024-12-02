@@ -241,6 +241,22 @@ export class StrategyBusiness {
         return result;
     }
 
+    private async _getStrategyTvl(address: `0x${string}`, abi: any): Promise<{ tvl?: bigint; error?: Error }> {
+        let result: { tvl?: bigint; error?: Error } = {};
+        result.tvl = (await server.PUBLIC_CLIENT.readContract({
+            address: address,
+            abi: abi,
+            functionName: 'tvl',
+            args: []
+        }).catch((bcError: any) => {
+            const error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling tvl().');
+            logging.error(bcError);
+            result.error = error;
+        })) as bigint | undefined;
+
+        return result;
+    }
+
     private async _getStrategyHolding(
         startegyAddress: `0x${string}`,
         assetAddress: `0x${string}`,
@@ -279,10 +295,10 @@ export class StrategyBusiness {
         const avgBuyingPrice = (await server.PUBLIC_CLIENT.readContract({
             address: startegyAddress,
             abi: abi,
-            functionName: 'averageBuyingPrice',
+            functionName: 'tokenAverageBuyingPrice',
             args: [assetAddress]
         }).catch((bcError: any) => {
-            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling averageBuyingPrice().');
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling tokenAverageBuyingPrice().');
             logging.error(bcError);
             return undefined;
         })) as bigint | undefined;
@@ -351,18 +367,24 @@ export class StrategyBusiness {
         }
         strategy.isPaused = isPausedResult.isPaused!;
 
+        const isTvlResult = await this._getStrategyTvl(address, strategy.contractAbi);
+        if (isTvlResult.error) {
+            return isTvlResult;
+        }
+        strategy.tvl = { value: isTvlResult.tvl!, decimals: strategy.underlyingAsset.decimals };
+
         let newHoldings: HoldingModel[] = [];
         let error: Error | undefined;
-        const underlyingAssetAmount: bigint | undefined = await server.PUBLIC_CLIENT.readContract({
-            address: strategy.underlyingAsset.address,
-            abi: erc20Abi,
-            functionName: 'balanceOf',
-            args: [address]
+        const underlyingAssetAmount: bigint | undefined = (await server.PUBLIC_CLIENT.readContract({
+            address: strategy.share.address,
+            abi: strategy.contractAbi,
+            functionName: 'totalAssets',
+            args: []
         }).catch((bcError: any) => {
-            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling balanceOf().');
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling totalAssets().');
             logging.error(bcError);
             return undefined;
-        });
+        })) as bigint | undefined;
         if (error) {
             return { error };
         }
@@ -374,16 +396,17 @@ export class StrategyBusiness {
                 value: BigInt(10 ** strategy.underlyingAsset.decimals),
                 decimals: strategy.underlyingAsset.decimals
             },
-            amount: { value: underlyingAssetAmount!, decimals: strategy.underlyingAsset.decimals }
+            amount: { value: underlyingAssetAmount!, decimals: strategy.underlyingAsset.decimals },
+            allocation: { value: underlyingAssetAmount! / strategy.tvl.value, decimals: strategy.underlyingAsset.decimals }
         });
 
         const holdingsCount = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: strategy.contractAbi,
-            functionName: 'getHoldingsCount',
+            functionName: 'holdingsCount',
             args: []
         }).catch((bcError: any) => {
-            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling getHoldingsCount().');
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling holdingsCount().');
             logging.error(bcError);
             return undefined;
         })) as bigint | undefined;
@@ -394,10 +417,10 @@ export class StrategyBusiness {
         const holdingsLUT = (await server.PUBLIC_CLIENT.readContract({
             address: address,
             abi: strategy.contractAbi,
-            functionName: 'getHoldingsAddress',
+            functionName: 'holdingsAddress',
             args: []
         }).catch((bcError: any) => {
-            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling getHoldingsAddress().');
+            error = new ServerError(ErrorCode.SERVER_ERROR, 'Failed request', 'Request failed at calling holdingsAddress().');
             logging.error(bcError);
             return undefined;
         })) as `0x${string}`[] | undefined;
@@ -424,7 +447,11 @@ export class StrategyBusiness {
                     value: holdingResult.holding!.averageBuyingPrice,
                     decimals: strategy.underlyingAsset.decimals
                 },
-                amount: { value: holdingResult.holding!.amount.value, decimals: holdingResult.holding!.amount.decimals }
+                amount: { value: holdingResult.holding!.amount.value, decimals: holdingResult.holding!.amount.decimals },
+                allocation: {
+                    value: (holdingResult.holding!.amount.value * holdingResult.holding!.averageBuyingPrice) / strategy.tvl.value,
+                    decimals: strategy.underlyingAsset.decimals
+                }
             });
         }
         strategy.holdings = newHoldings;

@@ -4,13 +4,15 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
+    "local-https-certificate": "openssl req -x509 -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -keyout private-key.pem -out certificate.pem",
     "supabase:type": "npx supabase gen types typescript --project-id tlgnuselfhuijhvheyts > src/models/database.types.ts",
     "dev": "NODE_ENV=development npm run supabase:type && nodemon",
+    "dev:new-https": "npm run local-https-certificate && npm run dev",
     "test": "NODE_ENV=test jest --config jest.config.ts --coverage",
     "start": "node build/server.js",
     "build": "rm -rf build/ && tsc -p tsconfig.build.json"
   },
-  "author": "0xEzSwim",
+  "author": "EzSwim",
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.46.1",

@@ -1,5 +1,6 @@
 import { AssetModel } from './Asset.model';
 import { FloatModel } from './Float.model';
+import { HoldingModel } from './Holding.model';
 
 export class StrategyModel {
     name!: string;
@@ -9,8 +10,8 @@ export class StrategyModel {
     share!: AssetModel;
     isPaused!: boolean;
 
-    holdings?: { symbol: string; address: `0x${string}`; value: FloatModel; amount: FloatModel }[];
-    tvl?: FloatModel;
+    tvl!: FloatModel;
+    holdings?: HoldingModel[];
     apy?: FloatModel;
 
     constructor(params: StrategyModel) {
