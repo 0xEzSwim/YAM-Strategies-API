@@ -314,17 +314,17 @@ export class CleanSatMiningBusiness {
         };
     }
 
-    public async updateOffer(offerId: bigint): Promise<{ offer?: Offer; error?: Error }> {
+    public async upsertOffer(offerId: bigint): Promise<{ offer?: Offer; error?: Error }> {
         let offerResult = await this.getOfferFromBlockchain(offerId);
         if (offerResult.error) {
             return offerResult;
         }
         let bcOffer = offerResult.offer!;
-        let localOfferIndex = this.offers.findIndex((offer) => offer.offerId == offerId);
+
+        let localOfferIndex = this.offers.findIndex((offer) => offer.offerId === offerId);
         if (localOfferIndex === -1) {
-            const error = new Error(ErrorCode.OFFER_NOT_FOUND, "Offer doesn't exist", `Offer #${offerId} is not accessible.`);
-            logging.error(error);
-            return { error };
+            this.offers.push(bcOffer);
+            return { offer: bcOffer };
         }
         this.offers[localOfferIndex] = bcOffer;
 
@@ -353,7 +353,7 @@ export class CleanSatMiningBusiness {
         };
     }
 
-    public async listenToSellingOffers(): Promise<{ error?: Error }> {
+    public async listenToNewSellingOffers(): Promise<{ error?: Error }> {
         const csmTokensResult = await this._assetBu.getCSMTokens();
         if (csmTokensResult.error) {
             return csmTokensResult;
@@ -373,7 +373,7 @@ export class CleanSatMiningBusiness {
         const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
             address: this._CLEANSAT_MINING_ADDRESS,
             abi: cleanSatMiningContract.abi,
-            eventName: ['OfferCreated', 'OfferUpdated'],
+            eventName: 'OfferCreated',
             args: {
                 offerToken: csmTokenAddresses,
                 buyerToken: stableCoinAddresses,
@@ -415,8 +415,6 @@ export class CleanSatMiningBusiness {
 
                 for (let index = 0; index < offers.length; index++) {
                     const offer = offers[index];
-                    // Add to local offers
-                    this.offers.push(offer);
                     // Calculate PnL to buy
                     const pnlResult = await this._calculateSellingOfferPnL(offer, 30n);
                     if (!pnlResult.error) {
@@ -424,7 +422,65 @@ export class CleanSatMiningBusiness {
                             const buyResult = await this._yamStrategyCSMBu.buyOfferWithStrategy(offer);
                             if (buyResult.success) {
                                 logging.info(`Offer #${offer.offerId} bought!`);
-                                await this.updateOffer(offer.offerId);
+                                await this.upsertOffer(offer.offerId);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return {};
+    }
+
+    public async listenToEditedSellingOffers(): Promise<{ error?: Error }> {
+        const unwatch = server.PUBLIC_CLIENT.watchContractEvent({
+            address: this._CLEANSAT_MINING_ADDRESS,
+            abi: cleanSatMiningContract.abi,
+            eventName: 'OfferUpdated',
+            args: {},
+            onLogs: async (logs) => {
+                let offers: Offer[] = (logs as unknown as any[]).map(
+                    (log: {
+                        eventName: string;
+                        args: {
+                            offerId: bigint;
+                            newPrice: bigint;
+                            newAmount: bigint;
+                        };
+                    }): Offer => {
+                        const oldOffer = this.offers.find((offer) => offer.offerId === log.args.offerId);
+
+                        return {
+                            offerId: oldOffer!.offerId,
+                            seller: oldOffer!.seller,
+                            buyer: oldOffer!.buyer,
+                            offerToken: oldOffer!.offerToken,
+                            offerTokenSymbol: oldOffer!.offerTokenSymbol,
+                            buyerToken: oldOffer!.buyerToken,
+                            buyerTokenSymbol: oldOffer!.buyerTokenSymbol,
+                            price: {
+                                value: log.args.newPrice,
+                                decimals: oldOffer!.price.decimals
+                            },
+                            amount: {
+                                value: log.args.newAmount,
+                                decimals: oldOffer!.amount.decimals
+                            }
+                        };
+                    }
+                );
+
+                for (let index = 0; index < offers.length; index++) {
+                    const offer = offers[index];
+                    // Calculate PnL to buy
+                    const pnlResult = await this._calculateSellingOfferPnL(offer, 30n);
+                    if (!pnlResult.error) {
+                        if (pnlResult.pnl!.value > 0) {
+                            const buyResult = await this._yamStrategyCSMBu.buyOfferWithStrategy(offer);
+                            if (buyResult.success) {
+                                logging.info(`Offer #${offer.offerId} bought!`);
+                                await this.upsertOffer(offer.offerId);
                             }
                         }
                     }
