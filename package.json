@@ -1,0 +1,38 @@
+{
+  "name": "yam-strategies-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.ts",
+  "scripts": {
+    "local-https-certificate": "openssl req -x509 -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -keyout private-key.pem -out certificate.pem",
+    "supabase:type": "npx supabase gen types typescript --project-id $(dotenv get SUPABASE_PROJECT_ID) > src/models/database.types.ts",
+    "dev": "NODE_ENV=development npm run supabase:type && nodemon",
+    "dev:new-https": "npm run local-https-certificate && npm run dev",
+    "test": "NODE_ENV=test jest --config jest.config.ts --coverage",
+    "start": "node build/server.js",
+    "build": "rm -rf build/ && tsc -p tsconfig.build.json"
+  },
+  "author": "EzSwim",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.46.1",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "joi": "^17.13.3",
+    "reflect-metadata": "^0.2.2",
+    "viem": "^2.21.29"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.13",
+    "@types/node": "^22.7.3",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "supabase": "^2.0.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}

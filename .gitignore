@@ -1,0 +1,14 @@
+.env
+
+# dependencies
+node_modules/
+
+# testing
+coverage/
+
+# production
+build/
+
+# certificate
+certificate.pem
+private-key.pem
