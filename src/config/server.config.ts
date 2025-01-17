@@ -4,7 +4,6 @@ import { Database } from '../models';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { gnosis, anvil } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { localCsmTokens, csmTokens, localStablecoins, stablecoins } from './assets.config';
 
 // Loads .env file contents into process.env
 dotenv.config();

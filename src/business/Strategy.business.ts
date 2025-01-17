@@ -215,8 +215,8 @@ export class StrategyBusiness {
 
         return {
             asset: {
-                apiId: 0,
                 address: address,
+                oracleIds: {},
                 symbol: symbol!,
                 supply: supply!,
                 decimals: decimals!,

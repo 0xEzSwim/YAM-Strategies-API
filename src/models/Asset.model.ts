@@ -1,5 +1,4 @@
 export type AssetModel = {
-    apiId: number;
     address: `0x${string}`;
     symbol: string;
     supply: bigint;
@@ -7,6 +6,11 @@ export type AssetModel = {
     isERC20?: boolean;
     isStableCoin?: boolean;
     isCSMToken?: boolean;
+    oracleIds: {
+        cmcId?: number;
+        csmId?: number;
+        realtId?: `0x${string}`;
+    };
 
     logoUrl?: string;
 };

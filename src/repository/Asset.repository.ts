@@ -8,6 +8,16 @@ export class AssetRepository {
     // CONSTANT
     static #instance: AssetRepository;
     private _db: SupabaseClient;
+    private _selectExpression: string = `
+        address,
+        oracleIds:Oracles (cmcId, csmId, realtId),
+        symbol,
+        supply::text,
+        decimals,
+        isERC20,
+        isStableCoin,
+        isCSMToken
+    `;
 
     private constructor() {
         this._db = server.DB_CLIENT;
@@ -22,18 +32,7 @@ export class AssetRepository {
     }
 
     private _buildAssetQuery(filter?: AssetFilter) {
-        let query = this._db.from('Assets').select(
-            `
-            address,
-            apiId,
-            symbol,
-            supply::text,
-            decimals,
-            isERC20,
-            isStableCoin,
-            isCSMToken
-            `
-        );
+        let query = this._db.from('Assets').select(this._selectExpression);
 
         if (!!filter?.addresses?.length) {
             query = query.in('address', filter.addresses);
@@ -85,18 +84,7 @@ export class AssetRepository {
             .from('Assets')
             .update({ supply: toJson(_asset.supply), updatedAt: new Date().toISOString() })
             .eq('address', _asset.address)
-            .select(
-                `
-            address,
-            apiId,
-            symbol,
-            supply::text,
-            decimals,
-            isERC20,
-            isStableCoin,
-            isCSMToken
-            `
-            )
+            .select(this._selectExpression)
             .returns<AssetModel[]>()
             .maybeSingle();
         if (!asset || dbError) {

@@ -30,7 +30,11 @@ export class StrategyRepository {
             contractAbi: startegyView.contractAbi,
             isPaused: startegyView.isPaused as boolean,
             underlyingAsset: {
-                apiId: startegyView.underlyingAssetApiId as number,
+                oracleIds: {
+                    cmcId: startegyView.underlyingAssetCmcId as number,
+                    csmId: startegyView.underlyingAssetCsmId as number,
+                    realtId: startegyView.underlyingAssetRealtId as `0x${string}`
+                },
                 address: startegyView.underlyingAssetAddress! as `0x${string}`,
                 symbol: startegyView.underlyingAssetSymbol as string,
                 supply: BigInt(startegyView.underlyingAssetSupply as string),
@@ -38,7 +42,11 @@ export class StrategyRepository {
                 isStableCoin: startegyView.underlyingAssetIsStableCoin as boolean
             },
             share: {
-                apiId: startegyView.shareApiId as number,
+                oracleIds: {
+                    cmcId: startegyView.shareCmcId as number,
+                    csmId: startegyView.shareCsmId as number,
+                    realtId: startegyView.shareRealtId as `0x${string}`
+                },
                 address: startegyView.shareAddress! as `0x${string}`,
                 symbol: startegyView.shareSymbol as string,
                 supply: BigInt(startegyView.shareSupply as string),

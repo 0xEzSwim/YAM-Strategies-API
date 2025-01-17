@@ -114,13 +114,13 @@ export class CleanSatMiningBusiness {
         let csmToken: AssetModel = csmTokenResult.assets![0];
         let csmTokenSupply: FloatModel = { value: csmToken.supply, decimals: csmToken.decimals }; // moves the least (replace with onchain data later)
 
-        let csmTokenPriceResult = await this._getCSMTokenPrice(csmToken.apiId); // moves rarely
+        let csmTokenPriceResult = await this._getCSMTokenPrice(csmToken.oracleIds.csmId!); // moves rarely
         if (csmTokenPriceResult.error) {
             return csmTokenPriceResult;
         }
         let csmTokenPrice: FloatModel = csmTokenPriceResult.price!;
 
-        let csmTokenTreasuryResult = await this._getCSMTokenTreasury(csmToken.apiId); // moves less
+        let csmTokenTreasuryResult = await this._getCSMTokenTreasury(csmToken.oracleIds.csmId!); // moves less
         if (csmTokenTreasuryResult.error) {
             return csmTokenTreasuryResult;
         }

@@ -12,38 +12,73 @@ export type Database = {
       Assets: {
         Row: {
           address: string
-          apiId: number
           createdAt: string
           decimals: number
           isCSMToken: boolean | null
           isERC20: boolean | null
           isStableCoin: boolean | null
+          oracleId: number | null
           supply: number
           symbol: string
           updatedAt: string
         }
         Insert: {
           address: string
-          apiId: number
           createdAt?: string
           decimals?: number
           isCSMToken?: boolean | null
           isERC20?: boolean | null
           isStableCoin?: boolean | null
+          oracleId?: number | null
           supply?: number
           symbol: string
           updatedAt?: string
         }
         Update: {
           address?: string
-          apiId?: number
           createdAt?: string
           decimals?: number
           isCSMToken?: boolean | null
           isERC20?: boolean | null
           isStableCoin?: boolean | null
+          oracleId?: number | null
           supply?: number
           symbol?: string
+          updatedAt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Assets_oracleId_fkey"
+            columns: ["oracleId"]
+            isOneToOne: false
+            referencedRelation: "Oracles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      Oracles: {
+        Row: {
+          cmcId: number | null
+          createdAt: string
+          csmId: number | null
+          id: number
+          realtId: string | null
+          updatedAt: string
+        }
+        Insert: {
+          cmcId?: number | null
+          createdAt?: string
+          csmId?: number | null
+          id?: number
+          realtId?: string | null
+          updatedAt?: string
+        }
+        Update: {
+          cmcId?: number | null
+          createdAt?: string
+          csmId?: number | null
+          id?: number
+          realtId?: string | null
           updatedAt?: string
         }
         Relationships: []
@@ -213,16 +248,20 @@ export type Database = {
           isPaused: boolean | null
           name: string | null
           shareAddress: string | null
-          shareApiId: number | null
+          shareCmcId: number | null
+          shareCsmId: number | null
           shareDecimals: number | null
           shareIsStableCoin: boolean | null
+          shareRealtId: string | null
           shareSupply: string | null
           shareSymbol: string | null
           tvl: string | null
           underlyingAssetAddress: string | null
-          underlyingAssetApiId: number | null
+          underlyingAssetCmcId: number | null
+          underlyingAssetCsmId: number | null
           underlyingAssetDecimals: number | null
           underlyingAssetIsStableCoin: boolean | null
+          underlyingAssetRealtId: string | null
           underlyingAssetSupply: string | null
           underlyingAssetSymbol: string | null
         }

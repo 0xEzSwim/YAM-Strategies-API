@@ -95,7 +95,7 @@ export class CryptoMarketBusiness {
         }
         const asset = assetResult.assets![0];
 
-        return await this._getTokenLogoUrl(asset.apiId);
+        return await this._getTokenLogoUrl(asset.oracleIds.cmcId!);
     }
 
     public async getTokenLastPrice(address: `0x${string}`): Promise<{ price?: FloatModel; error?: Error }> {
@@ -106,7 +106,7 @@ export class CryptoMarketBusiness {
         }
         const asset = assetResult.assets![0];
 
-        return await this._getLatestPrice(asset.apiId);
+        return await this._getLatestPrice(asset.oracleIds.cmcId!);
     }
 
     public async getBTCLastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
@@ -116,8 +116,8 @@ export class CryptoMarketBusiness {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.assets![0].apiId;
-        return await this._getLatestPrice(cmcAssetId);
+        const asset = assetResult.assets![0];
+        return await this._getLatestPrice(asset.oracleIds.cmcId!);
     }
 
     public async getUSDCLastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
@@ -127,8 +127,8 @@ export class CryptoMarketBusiness {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.assets![0].apiId;
-        return await this._getLatestPrice(cmcAssetId);
+        const asset = assetResult.assets![0];
+        return await this._getLatestPrice(asset.oracleIds.cmcId!);
     }
 
     public async getWXDAILastPrice(): Promise<{ price?: FloatModel; error?: Error }> {
@@ -138,8 +138,8 @@ export class CryptoMarketBusiness {
             return assetResult;
         }
 
-        const cmcAssetId = assetResult.assets![0].apiId;
-        return await this._getLatestPrice(cmcAssetId);
+        const asset = assetResult.assets![0];
+        return await this._getLatestPrice(asset.oracleIds.cmcId!);
     }
 
     public async getStablecoinLastPrice(address: `0x${string}`): Promise<{ price?: FloatModel; error?: Error }> {
@@ -148,8 +148,8 @@ export class CryptoMarketBusiness {
         if (assetResult.error) {
             return assetResult;
         }
-        const asset = assetResult.assets![0];
 
-        return await this._getLatestPrice(asset.apiId);
+        const asset = assetResult.assets![0];
+        return await this._getLatestPrice(asset.oracleIds.cmcId!);
     }
 }
