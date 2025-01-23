@@ -1,12 +1,12 @@
 import axios from 'axios';
-import { server } from '../config';
-import { Error, ErrorCode, ServerError } from '../errors';
-import { AssetFilter, AssetModel, FloatModel, Offer } from '../models';
+import { server } from '../../config';
+import { Error, ErrorCode, ServerError } from '../../errors';
+import { AssetFilter, AssetModel, FloatModel, Offer } from '../../models';
 import { CryptoMarketBusiness } from './CryptoMarket.business';
-import { cleanSatMiningContract } from '../smart-contracts';
-import { convertNumberToBigInt } from '../library';
-import { AssetBusiness } from './Asset.business';
-import { YAMStrategyCSMBusiness } from './YAMStrategyCSM.business';
+import { cleanSatMiningContract } from '../../smart-contracts';
+import { convertNumberToBigInt } from '../../library';
+import { AssetBusiness } from '../Asset.business';
+import { YAMStrategyCSMBusiness } from '../strategies/YAMStrategyCSM.business';
 
 export class CleanSatMiningBusiness {
     // CONSTANT

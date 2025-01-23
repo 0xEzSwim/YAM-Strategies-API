@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import { Controller, Route } from '../decorators';
-import { CryptoMarketBusiness } from '../business';
-import { ServerError } from '../errors';
+import { Controller, Route } from '../../decorators';
+import { CryptoMarketBusiness } from '../../business';
+import { ServerError } from '../../errors';
 
 @Controller('/crypto-market')
 export class CryptoMarketController {

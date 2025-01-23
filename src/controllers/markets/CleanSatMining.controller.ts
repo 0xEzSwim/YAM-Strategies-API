@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { Controller, Route, Validate } from '../decorators';
-import { CleanSatMiningBusiness, YAMStrategyCSMBusiness } from '../business';
-import { ServerError } from '../errors';
-import { convertNumberToBigInt } from '../library';
+import { Controller, Route, Validate } from '../../decorators';
+import { CleanSatMiningBusiness, YAMStrategyCSMBusiness } from '../../business';
+import { ServerError } from '../../errors';
+import { convertNumberToBigInt } from '../../library';
 import Joi from 'joi';
 
 const postAddUndervaluedStrategyAllowance = Joi.object({

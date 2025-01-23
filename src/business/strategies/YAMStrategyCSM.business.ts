@@ -1,8 +1,8 @@
 import { erc20Abi } from 'viem';
-import { server } from '../config';
-import { ErrorCode, ServerError } from '../errors';
-import { FloatModel, Offer } from '../models';
-import { StrategyBusiness } from './Strategy.business';
+import { server } from '../../config';
+import { ErrorCode, ServerError } from '../../errors';
+import { FloatModel, Offer } from '../../models';
+import { StrategyBusiness } from '../Strategy.business';
 
 export class YAMStrategyCSMBusiness {
     // CONSTANT

@@ -3,7 +3,7 @@ import { Error, ErrorCode, ServerError } from '../errors';
 import { server } from '../config';
 import { AssetBusiness } from './Asset.business';
 import { StrategyRepository } from '../repository';
-import { CryptoMarketBusiness } from './CryptoMarket.business';
+import { CryptoMarketBusiness } from './markets/CryptoMarket.business';
 import { HoldingBusiness } from './Holding.business';
 import { erc20Abi } from 'viem';
 
