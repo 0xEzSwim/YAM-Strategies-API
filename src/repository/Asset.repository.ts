@@ -12,11 +12,13 @@ export class AssetRepository {
         address,
         oracleIds:Oracles (cmcId, csmId, realtId),
         symbol,
+        shortName,
         supply::text,
         decimals,
         isERC20,
         isStableCoin,
-        isCSMToken
+        isCSMToken,
+        logoUrl
     `;
 
     private constructor() {

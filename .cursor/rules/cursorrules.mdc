@@ -1,0 +1,152 @@
+---
+description: Project context, guidelines and conventions
+globs: **/*
+alwaysApply: false
+---
+<context>
+You are an AI embed in a API/Backend project that use :
+
+-   TypeScript
+-   Node.js with Express
+-   Joi
+-   Supabase
+-   EVM Blockchain
+</context>
+
+<style-and-structure>
+- Write concise, technical TypeScript code using functional and declarative programming patterns.
+- Prefer classes; prefer iteration and modularization over code duplication.
+- Use descriptive variable names with auxiliary verbs (`getFullAssets`, `updateOffers`).
+- Architecture: Controller (API endpoints), Business (Logic), Repository (Data base layer/ORM). (`server.ts` is the entry point)
+- All types are to be stored in the `src/models` folder execpt for error types which are stored in `src/errors`
+</style-and-structure>
+
+<naming-conventions>
+- Use mixed case with the first letter of each internal word capitalized for directories and add the layer it is in at the end after a dot (e.g., `business/cryptoMarket.business`, `controller/RealTokens.controller`).
+- method names in the code should use camelCase format: `getAssets()`.
+</naming-conventions>
+
+<typescript-usage>
+- Use TypeScript for all code; prefer types over interfaces.
+- Avoid enums; use maps instead.
+- Use classes and methods with TypeScript types.
+</typescript-usage>
+
+<creating-a-controller>
+- You always use a class with export.
+- Controller must be added to defined routes in `server.ts`.
+- Controller class always has `@Controller` decorator.
+- Endpoints always have `@Route`decorator.
+- Post endpoint always have `@Validate` decorator with a Joi object as parameter.
+
+Example:
+
+```ts
+import { Controller, Route, Validate } from '../decorators';
+import Joi from 'joi';
+
+const postHealthCheckValidation = Joi.object({
+    name: Joi.string().required(),
+    email: Joi.string().email()
+});
+
+@Controller('/my-exemple')
+export class MyExempleController {
+    @Route('get', '/exemple')
+    getExemple(req: Request, res: Response, next: NextFunction) {
+        logging.info('Get /exemple route called successfully!');
+        return res.status(200).json({ data: ' hello world!' });
+    }
+
+    @Route('post', '/exemple')
+    @Validate(postHealthCheckValidation)
+    postExemple(req: Request, res: Response, next: NextFunction) {
+        logging.info('Post /exemple route called successfully!');
+        return res.status(200).json({ data: { ...req.body } });
+    }
+
+    // other endpoints...
+}
+```
+</creating-a-controller>
+
+<creating-a-business>
+- You always use a class with export.
+- All Business classes must be singletons.
+
+Example:
+
+```ts
+export class MyExempleBusiness {
+    // CONSTANT
+    static #instance: MyExempleBusiness;
+
+    private constructor() {
+    }
+
+    public static get instance(): MyExempleBusiness {
+        if (!MyExempleBusiness.#instance) {
+            MyExempleBusiness.#instance = new MyExempleBusiness();
+        }
+
+        return MyExempleBusiness.#instance;
+    }
+
+    //Implement logic here...
+}
+```
+</creating-a-business>
+
+<creating-a-repository>
+- You always use a class with export.
+- You always import `SupabaseClient` and `server`.
+- All Repository classes must be singletons.
+
+Example:
+
+```ts
+import { SupabaseClient } from '@supabase/supabase-js';
+import { server } from '../config';
+
+export class MyExempleRepository {
+    // CONSTANT
+    static #instance: MyExempleRepository;
+    private _db: SupabaseClient;
+
+    private constructor() {
+        this._db = server.DB_CLIENT;
+    }
+
+    public static get instance(): MyExempleRepository {
+        if (!MyExempleRepository.#instance) {
+            MyExempleRepository.#instance = new MyExempleRepository();
+        }
+
+        return MyExempleRepository.#instance;
+    }
+
+    //Implement DB interactions here...
+}
+```
+</creating-a-repository>
+
+<commit>
+You're commit must always follow commitizen convention.
+
+<example>
+- feat(sidebar): add sidebar user button
+- fix(sidebar): fix sidebar user button
+- refactor(sidebar): refactor sidebar user button
+- docs(sidebar): add docs for sidebar user button
+- style(sidebar): style sidebar user button
+- test(sidebar): add test for sidebar user button
+- chore(sidebar): add chore for sidebar user button
+</example>
+
+<rules>
+- Keep it short, ideally under 50 characters.
+- Explain what and why, not how.
+- Separate subject and body with a blank line.
+- Use body only in case of a big commit.
+</rules>
+</commit>

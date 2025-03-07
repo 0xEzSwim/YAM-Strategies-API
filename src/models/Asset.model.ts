@@ -1,6 +1,7 @@
 export type AssetModel = {
     address: `0x${string}`;
     symbol: string;
+    shortName?: string;
     supply: bigint;
     decimals: number;
     isERC20?: boolean;

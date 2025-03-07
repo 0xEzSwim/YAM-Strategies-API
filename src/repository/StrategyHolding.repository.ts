@@ -1,29 +1,29 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { server } from '../config';
-import { Database, HoldingFilter, HoldingModel } from '../models';
+import { Database, StrategyHoldingFilter, StrategyHoldingModel } from '../models';
 import { Error, ErrorCode } from '../errors';
 import { toJson } from '../library';
 
-type HoldingView = Database['public']['Views']['Holdings']['Row'];
+type StrategyHoldingView = Database['public']['Views']['StrategyHoldings']['Row'];
 
-export class HoldingRepository {
+export class StrategyHoldingRepository {
     // CONSTANT
-    static #instance: HoldingRepository;
+    static #instance: StrategyHoldingRepository;
     private _db: SupabaseClient;
 
     private constructor() {
         this._db = server.DB_CLIENT;
     }
 
-    public static get instance(): HoldingRepository {
-        if (!HoldingRepository.#instance) {
-            HoldingRepository.#instance = new HoldingRepository();
+    public static get instance(): StrategyHoldingRepository {
+        if (!StrategyHoldingRepository.#instance) {
+            StrategyHoldingRepository.#instance = new StrategyHoldingRepository();
         }
 
-        return HoldingRepository.#instance;
+        return StrategyHoldingRepository.#instance;
     }
 
-    private _toModel(holdingView: HoldingView): HoldingModel {
+    private _toModel(holdingView: StrategyHoldingView): StrategyHoldingModel {
         return {
             address: holdingView.assetAddress as `0x${string}`,
             symbol: holdingView.assetSymbol as string,
@@ -33,8 +33,8 @@ export class HoldingRepository {
         };
     }
 
-    private _buildAssetQuery(filter?: HoldingFilter) {
-        let query = this._db.from('Holdings').select();
+    private _buildAssetQuery(filter?: StrategyHoldingFilter) {
+        let query = this._db.from('StrategyHoldings').select();
 
         if (!!filter?.strategyAddresses?.length) {
             query = query.in('strategyAddress', filter.strategyAddresses);
@@ -48,10 +48,10 @@ export class HoldingRepository {
             query = query.in('shareSymbol', filter.symbols);
         }
 
-        return query.returns<HoldingView[]>();
+        return query.returns<StrategyHoldingView[]>();
     }
 
-    public async getHoldings(filter?: HoldingFilter): Promise<{ holdings?: HoldingModel[]; error?: Error }> {
+    public async getHoldings(filter?: StrategyHoldingFilter): Promise<{ holdings?: StrategyHoldingModel[]; error?: Error }> {
         const { data: holdingsData, error: dbError } = await this._buildAssetQuery(filter);
         if (dbError) {
             const error = new Error(ErrorCode.DB_ERROR, 'Holdings SELECT Error', `Could not request Holdings to DB.`);
@@ -67,14 +67,17 @@ export class HoldingRepository {
             return { error };
         }
 
-        const holdings: HoldingModel[] = holdingsData.map((holdingData) => {
+        const holdings: StrategyHoldingModel[] = holdingsData.map((holdingData) => {
             return this._toModel(holdingData);
         });
 
         return { holdings };
     }
 
-    public async upsertHolding(_startegyAddress: `0x${string}`, _holding: HoldingModel): Promise<{ holding?: HoldingModel; error?: Error }> {
+    public async upsertHolding(
+        _startegyAddress: `0x${string}`,
+        _holding: StrategyHoldingModel
+    ): Promise<{ holding?: StrategyHoldingModel; error?: Error }> {
         let { error: dbError } = await this._db.from('Strategies_Assets').upsert({
             strategyAddress: _startegyAddress,
             assetAddress: _holding.address,
@@ -84,7 +87,7 @@ export class HoldingRepository {
         });
 
         if (dbError) {
-            const error = new Error(ErrorCode.DB_ERROR, 'Holding UPDATE Error', `Could not update Holding to DB.`);
+            const error = new Error(ErrorCode.DB_ERROR, 'Strategy Holding UPDATE Error', `Could not update Strategy Holding to DB.`);
             logging.error(error);
             console.error(dbError);
             return { error };

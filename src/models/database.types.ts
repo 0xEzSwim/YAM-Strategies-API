@@ -17,7 +17,9 @@ export type Database = {
           isCSMToken: boolean | null
           isERC20: boolean | null
           isStableCoin: boolean | null
+          logoUrl: string | null
           oracleId: number | null
+          shortName: string | null
           supply: number
           symbol: string
           updatedAt: string
@@ -29,7 +31,9 @@ export type Database = {
           isCSMToken?: boolean | null
           isERC20?: boolean | null
           isStableCoin?: boolean | null
+          logoUrl?: string | null
           oracleId?: number | null
+          shortName?: string | null
           supply?: number
           symbol: string
           updatedAt?: string
@@ -41,7 +45,9 @@ export type Database = {
           isCSMToken?: boolean | null
           isERC20?: boolean | null
           isStableCoin?: boolean | null
+          logoUrl?: string | null
           oracleId?: number | null
+          shortName?: string | null
           supply?: number
           symbol?: string
           updatedAt?: string
@@ -82,6 +88,108 @@ export type Database = {
           updatedAt?: string
         }
         Relationships: []
+      }
+      Orders: {
+        Row: {
+          amount: number
+          basePrice: number
+          buyerToken: string
+          createdAt: string
+          displayedPrice: number
+          filledAmount: number
+          id: number
+          isActive: boolean
+          offerToken: string
+          price: number
+          updatedAt: string
+          userAddress: string
+        }
+        Insert: {
+          amount?: number
+          basePrice?: number
+          buyerToken: string
+          createdAt?: string
+          displayedPrice: number
+          filledAmount?: number
+          id?: number
+          isActive?: boolean
+          offerToken: string
+          price: number
+          updatedAt?: string
+          userAddress: string
+        }
+        Update: {
+          amount?: number
+          basePrice?: number
+          buyerToken?: string
+          createdAt?: string
+          displayedPrice?: number
+          filledAmount?: number
+          id?: number
+          isActive?: boolean
+          offerToken?: string
+          price?: number
+          updatedAt?: string
+          userAddress?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerToken"]
+            isOneToOne: false
+            referencedRelation: "Assets"
+            referencedColumns: ["address"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerToken"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerToken"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerToken"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
+            referencedColumns: ["assetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerToken"]
+            isOneToOne: false
+            referencedRelation: "Assets"
+            referencedColumns: ["address"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerToken"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerToken"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerToken"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
+            referencedColumns: ["assetAddress"]
+          },
+        ]
       }
       Strategies: {
         Row: {
@@ -130,20 +238,20 @@ export type Database = {
             columns: ["address"]
             isOneToOne: true
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
-          },
-          {
-            foreignKeyName: "Strategies_address_fkey"
-            columns: ["address"]
-            isOneToOne: true
-            referencedRelation: "FullStrategies"
             referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_address_fkey"
             columns: ["address"]
             isOneToOne: true
-            referencedRelation: "Holdings"
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_address_fkey"
+            columns: ["address"]
+            isOneToOne: true
+            referencedRelation: "StrategyHoldings"
             referencedColumns: ["assetAddress"]
           },
           {
@@ -158,20 +266,20 @@ export type Database = {
             columns: ["underlyingAssetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
-          },
-          {
-            foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
-            columns: ["underlyingAssetAddress"]
-            isOneToOne: false
-            referencedRelation: "FullStrategies"
             referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
             columns: ["underlyingAssetAddress"]
             isOneToOne: false
-            referencedRelation: "Holdings"
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_underlyingAssetAddress_fkey"
+            columns: ["underlyingAssetAddress"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
             referencedColumns: ["assetAddress"]
           },
         ]
@@ -214,20 +322,20 @@ export type Database = {
             columns: ["assetAddress"]
             isOneToOne: false
             referencedRelation: "FullStrategies"
-            referencedColumns: ["shareAddress"]
-          },
-          {
-            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
-            columns: ["assetAddress"]
-            isOneToOne: false
-            referencedRelation: "FullStrategies"
             referencedColumns: ["underlyingAssetAddress"]
           },
           {
             foreignKeyName: "Strategies_Assets_assetAddress_fkey"
             columns: ["assetAddress"]
             isOneToOne: false
-            referencedRelation: "Holdings"
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Strategies_Assets_assetAddress_fkey"
+            columns: ["assetAddress"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
             referencedColumns: ["assetAddress"]
           },
           {
@@ -241,6 +349,88 @@ export type Database = {
       }
     }
     Views: {
+      FullOrders: {
+        Row: {
+          amount: string | null
+          basePrice: string | null
+          buyerAssetAdress: string | null
+          buyerAssetDecimals: number | null
+          buyerAssetIsStableCoin: boolean | null
+          buyerAssetLogoUrl: string | null
+          buyerAssetSupply: string | null
+          buyerAssetSymbol: string | null
+          displayedPrice: string | null
+          filledAmount: string | null
+          id: number | null
+          isActive: boolean | null
+          offerAssetAdress: string | null
+          offerAssetDecimals: number | null
+          offerAssetIsStableCoin: boolean | null
+          offerAssetLogoUrl: string | null
+          offerAssetSupply: string | null
+          offerAssetSymbol: string | null
+          price: string | null
+          userAddress: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "Assets"
+            referencedColumns: ["address"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Orders_buyerToken_fkey"
+            columns: ["buyerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
+            referencedColumns: ["assetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "Assets"
+            referencedColumns: ["address"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["underlyingAssetAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "FullStrategies"
+            referencedColumns: ["shareAddress"]
+          },
+          {
+            foreignKeyName: "Orders_offerToken_fkey"
+            columns: ["offerAssetAdress"]
+            isOneToOne: false
+            referencedRelation: "StrategyHoldings"
+            referencedColumns: ["assetAddress"]
+          },
+        ]
+      }
       FullStrategies: {
         Row: {
           contractAbi: Json | null
@@ -267,7 +457,7 @@ export type Database = {
         }
         Relationships: []
       }
-      Holdings: {
+      StrategyHoldings: {
         Row: {
           assetAddress: string | null
           assetAmount: string | null

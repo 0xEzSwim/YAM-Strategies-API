@@ -6,7 +6,14 @@ import { server } from './config';
 import 'reflect-metadata';
 import { corsHandler, loggingHandler, notFoundHandler } from './middlewares';
 import { defineRoutes } from './modules';
-import { MainController, CryptoMarketController, CleanSatMiningController, RealTokenController } from './controllers';
+import {
+    MainController,
+    CryptoMarketController,
+    CleanSatMiningController,
+    RealTokenController,
+    OrderController,
+    AssetController
+} from './controllers';
 import { CleanSatMiningBusiness, YAMStrategyCSMBusiness } from './business';
 
 export const router = express();
@@ -30,7 +37,7 @@ export const Main = async () => {
 
     logging.log('Define Controller Routing');
     logging.log('----------------------------------------');
-    defineRoutes([MainController, CryptoMarketController, CleanSatMiningController, RealTokenController], router);
+    defineRoutes([MainController, CryptoMarketController, CleanSatMiningController, RealTokenController, OrderController, AssetController], router);
     logging.log('----------------------------------------\n');
 
     logging.log('Define Routing Error');

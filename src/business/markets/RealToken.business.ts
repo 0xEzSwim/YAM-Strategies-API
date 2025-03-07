@@ -25,11 +25,19 @@ export class RealTokenBusiness {
     }
 
     //#region Third party Call
-    private async _getRealTokenPrice(_realtId: `0x${string}`): Promise<{ price?: FloatModel; error?: Error }> {
-        let result: { price: FloatModel; error?: Error } = {
-            price: {
-                value: 0n,
-                decimals: 2 // USD goes to the cent (0,01 is the smallest unit)
+    private async _getRealTokenPriceInfo(
+        _realtId: `0x${string}`
+    ): Promise<{ priceInfo?: { price: FloatModel; info: { rentedUnits?: number; totalUnits?: number } }; error?: Error }> {
+        let result: { priceInfo: { price: FloatModel; info: { rentedUnits?: number; totalUnits?: number } }; error?: Error } = {
+            priceInfo: {
+                price: {
+                    value: 0n,
+                    decimals: 2 // USD goes to the cent (0,01 is the smallest unit)
+                },
+                info: {
+                    rentedUnits: 0,
+                    totalUnits: 0
+                }
             }
         };
 
@@ -44,9 +52,15 @@ export class RealTokenBusiness {
             .request(options)
             .then(({ data }: { data: any }) => {
                 const price: number = data['tokenPrice']; // In USD
-                result.price.value = convertNumberToBigInt(price, result.price.decimals);
+                result.priceInfo.price.value = convertNumberToBigInt(price, result.priceInfo.price.decimals);
+                const totalUnits: number | null = data['totalUnits'];
+                if (totalUnits) {
+                    const rentedUnits: number = data['rentedUnits'];
+                    result.priceInfo.info.rentedUnits = rentedUnits;
+                    result.priceInfo.info.totalUnits = totalUnits;
+                }
                 logging.info(`Received data from ${options.url}:`);
-                console.log(result.price);
+                console.log(result.priceInfo);
             })
             .catch((error: any) => {
                 logging.error(error);
@@ -57,7 +71,9 @@ export class RealTokenBusiness {
     }
     //#endregion
 
-    public async getRealTokenFundamentalValue(tokenAddress: `0x${string}`): Promise<{ fundamentalValue?: FloatModel; error?: Error }> {
+    public async getRealTokenPriceInfo(
+        tokenAddress: `0x${string}`
+    ): Promise<{ priceInfo?: { price: FloatModel; info: { rentedUnits?: number; totalUnits?: number } }; error?: Error }> {
         const filter: AssetFilter = { addresses: [tokenAddress] };
         const assetResult = await this._assetBu.getAssets(filter);
         if (assetResult.error) {
@@ -65,15 +81,42 @@ export class RealTokenBusiness {
         }
         const asset = assetResult.assets![0];
 
-        let realTokenPriceResult = await this._getRealTokenPrice(asset.oracleIds.realtId!);
+        let realTokenPriceResult = await this._getRealTokenPriceInfo(asset.oracleIds.realtId!);
         if (realTokenPriceResult.error) {
             return realTokenPriceResult;
         }
-        let realTokenPrice: FloatModel = realTokenPriceResult.price!;
 
-        let fundamentalValue: FloatModel = { value: realTokenPrice.value, decimals: realTokenPrice.decimals };
-        logging.info('CSM token fundamental value:');
-        console.log(fundamentalValue);
-        return { fundamentalValue };
+        let realTokenPriceInfo: { price: FloatModel; info: { rentedUnits?: number; totalUnits?: number } } = realTokenPriceResult.priceInfo!;
+        return { priceInfo: realTokenPriceInfo };
+    }
+
+    public async getRealTokenPrices(
+        tokenAddress: `0x${string}`
+    ): Promise<{ prices?: { fundamentalPrice: FloatModel; buyBackPrice: FloatModel }; error?: Error }> {
+        const result = await this.getRealTokenPriceInfo(tokenAddress);
+        if (result.error) {
+            return result;
+        }
+        const priceInfo = result.priceInfo!;
+
+        const fundamentalPrice = priceInfo.price.value;
+        let buyBackPrice = fundamentalPrice;
+        if (priceInfo.info.totalUnits) {
+            // -5% for each vacant unit
+            const q =
+                convertNumberToBigInt(1, priceInfo.price.decimals) -
+                (5n *
+                    (convertNumberToBigInt(priceInfo.info.totalUnits!, priceInfo.price.decimals) -
+                        convertNumberToBigInt(priceInfo.info.rentedUnits!, priceInfo.price.decimals))) /
+                    convertNumberToBigInt(priceInfo.info.totalUnits!, priceInfo.price.decimals);
+            buyBackPrice = (fundamentalPrice * q) / convertNumberToBigInt(1, priceInfo.price.decimals);
+        }
+
+        return {
+            prices: {
+                fundamentalPrice: { value: fundamentalPrice, decimals: priceInfo.price.decimals },
+                buyBackPrice: { value: buyBackPrice, decimals: priceInfo.price.decimals }
+            }
+        };
     }
 }

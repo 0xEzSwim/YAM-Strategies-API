@@ -1,10 +1,10 @@
-import { AssetFilter, AssetModel, FloatModel, HoldingFilter, HoldingModel, StrategyFilter, StrategyModel } from '../models';
+import { AssetFilter, AssetModel, FloatModel, StrategyFilter, StrategyModel, StrategyHoldingFilter, StrategyHoldingModel } from '../models';
 import { Error, ErrorCode, ServerError } from '../errors';
 import { server } from '../config';
 import { AssetBusiness } from './Asset.business';
 import { StrategyRepository } from '../repository';
 import { CryptoMarketBusiness } from './markets/CryptoMarket.business';
-import { HoldingBusiness } from './Holding.business';
+import { StrategyHoldingBusiness } from './StrategyHolding.business';
 import { erc20Abi } from 'viem';
 
 export class StrategyBusiness {
@@ -12,13 +12,13 @@ export class StrategyBusiness {
     static #instance: StrategyBusiness;
     private _strategyRepo: StrategyRepository;
     private _assetBu: AssetBusiness;
-    private _holdingBu: HoldingBusiness;
+    private _strategyHoldingBu: StrategyHoldingBusiness;
     private _cryptoBu: CryptoMarketBusiness;
 
     private constructor() {
         this._strategyRepo = StrategyRepository.instance;
         this._assetBu = AssetBusiness.instance;
-        this._holdingBu = HoldingBusiness.instance;
+        this._strategyHoldingBu = StrategyHoldingBusiness.instance;
         this._cryptoBu = CryptoMarketBusiness.instance;
     }
 
@@ -61,8 +61,8 @@ export class StrategyBusiness {
         }
         const strategy = strategyResult.strategies![0];
 
-        const holdingFilter: HoldingFilter = { strategyAddresses: [address] };
-        const holdingResult = await this._holdingBu.getHoldings(holdingFilter);
+        const holdingFilter: StrategyHoldingFilter = { strategyAddresses: [address] };
+        const holdingResult = await this._strategyHoldingBu.getHoldings(holdingFilter);
         if (holdingResult.error) {
             holdingResult.holdings = [];
         }
@@ -324,11 +324,11 @@ export class StrategyBusiness {
 
         // Upsert Holdings in DB
         if (!startegy.holdings?.length) {
-            await this._holdingBu.deleteHoldings(startegy.share.address);
+            await this._strategyHoldingBu.deleteHoldings(startegy.share.address);
         } else {
             for (let index = 0; index < startegy.holdings.length; index++) {
                 const holding = startegy.holdings[index];
-                await this._holdingBu.upsertHolding(startegy.share.address, holding);
+                await this._strategyHoldingBu.upsertHolding(startegy.share.address, holding);
             }
         }
 
@@ -373,7 +373,7 @@ export class StrategyBusiness {
         }
         strategy.tvl = { value: isTvlResult.tvl!, decimals: strategy.underlyingAsset.decimals };
 
-        let newHoldings: HoldingModel[] = [];
+        let newHoldings: StrategyHoldingModel[] = [];
         let error: Error | undefined;
         const underlyingAssetAmount: bigint | undefined = (await server.PUBLIC_CLIENT.readContract({
             address: strategy.share.address,
